@@ -1,0 +1,5 @@
+describe("run.nvim", function()
+    it("can be required", function()
+        require("run")
+    end)
+end)
