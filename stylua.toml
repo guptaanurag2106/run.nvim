@@ -1,0 +1,9 @@
+indent_type = "Spaces"  
+indent_width = 4       
+align_args = true       
+align_parameters = true 
+
+wrap_before_nested_call = true  
+insert_blank_line_after_imports = true 
+spaces_around_operators = true  
+space_after_keywords = true     

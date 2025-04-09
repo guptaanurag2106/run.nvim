@@ -45,7 +45,6 @@ M.runfile = function()
     local file_list = { curr_file }
 
     local type = M._get_selected_type(file_list)
-    print(type)
     local command = "xdg-open %f"
     if config.options.default_actions[type] ~= nil then
         command = config.options.default_actions[type].command
@@ -57,14 +56,15 @@ M.runfile = function()
     if not input or string.len(input) == 0 then
         input = command
     end
-    input = input:gsub("%s+", " ")
 
     input = M._fill_input(input, file_list)
+    input = input:gsub("%s+", " ")
 
     local execute = true
     if config.options.ask_confirmation then
         while true do
-            execute = vim.fn.input("Run [" .. input .. "] (Y/n): ")
+            local message = ("Run [" .. input .. "] (Y/n): ")
+            execute = vim.fn.input(message)
 
             if execute:lower() == "y" or execute:lower() == "Y" or string.len(execute) == 0 then
                 execute = true
@@ -82,7 +82,7 @@ M.runfile = function()
         print("\nCancelled")
         return
     end
-
+    print("\nRunning")
     -- Run `input`
 end
 
@@ -110,7 +110,7 @@ M._fill_input = function(input, file_list)
 
     -- Replace numbered placeholders surrounded by spaces " %1 ", " %2 ", etc.
     for i, file in ipairs(file_list) do
-        local pattern = " %%" .. i
+        local pattern = "%%" .. i
         if result:match(pattern) then
             result = result:gsub(pattern, " " .. file)
             placeholder_found = true
@@ -119,7 +119,7 @@ M._fill_input = function(input, file_list)
 
     -- Replace %f surrounded by spaces
     local files_string = " " .. table.concat(file_list, " ") .. " "
-    if result:match(" %%f") then
+    if result:match("%%f") then
         result = result:gsub(" %%f", files_string)
         placeholder_found = true
     end
