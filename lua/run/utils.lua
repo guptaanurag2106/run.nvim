@@ -43,5 +43,48 @@ M.path_join = function(...)
     return table.concat(all_parts, M.path_separator)
 end
 
+---Check if string ends with suffix
+---@param str string
+---@param suffix string
+---@return boolean
+M.ends_with = function(str, suffix)
+    return str:sub(- #suffix) == suffix
+end
+
+--- Get the file extension from a given filename.
+---@param filename string: The name of the file (including its extension).
+---@return string|nil: The file extension, or nil if no extension exists.
+M.get_file_extension = function(filename)
+    if filename and filename:match("^.+%.(.+)$") then
+        return filename:match("^.+%.(.+)$")
+    else
+        return nil
+    end
+end
+
+-- --- Check if a given path is a file or directory, and if it's an executable file.
+-- ---@param path string: The path to check.
+-- ---@return string: 'file' if it's a file, 'folder' if it's a directory, 'not found' if the path doesn't exist.
+-- ---@return boolean|nil: `true` if the file is executable, `nil` if it's not a file or doesn't exist.
+-- M.check_path = function(path)
+--     local attributes = lfs.attributes(path)
+--
+--     if not attributes then
+--         -- If attributes are nil, the file or directory doesn't exist
+--         return "not found", nil
+--     end
+--
+--     if attributes.mode == "directory" then
+--         -- If it's a directory
+--         return "folder", nil
+--     elseif attributes.mode == "file" then
+--         -- If it's a file, check if it's executable (only for Unix-like systems)
+--         local is_executable = os.execute("test -x " .. path) == 0
+--         return "file", is_executable
+--     else
+--         -- Handle any other type of file system entry
+--         return "unknown", nil
+--     end
+-- end
 
 return M

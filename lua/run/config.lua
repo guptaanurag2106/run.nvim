@@ -16,9 +16,17 @@ local defaults = {
             command = "bash %f",
             description = "Run bash files"
         },
+        [".sh"] = {
+            command = "sh %f",
+            description = "Run shell files"
+        },
         [".tar.gz"] = {
             command = "tar -xvf %f",
             description = "Extracts archive file"
+        },
+        [".exe"] = {
+            command = "%1",
+            description = "Runs the file (windows exec)"
         },
         ["exe"] = {
             command = "%1",
