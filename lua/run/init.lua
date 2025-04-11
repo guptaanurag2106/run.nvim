@@ -1,6 +1,7 @@
 local _browsers = require("run.browsers")
 local config    = require("run.config")
 local utils     = require("run.utils")
+local run       = require("run.run")
 local uv        = vim.uv
 
 local M         = {}
@@ -84,6 +85,11 @@ M.runfile = function()
     end
     print("\nRunning")
     -- Run `input`
+    --
+    -- run.run_sync_new(input)
+    run.run_async(input)
+    -- run.run_async_new(input)
+    -- run.run_term(input)
 end
 
 M.rundir = function()
