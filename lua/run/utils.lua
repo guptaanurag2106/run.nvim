@@ -7,6 +7,19 @@ if M.is_windows == true then
     M.path_separator = "\\"
 end
 
+M.get_open_command = function()
+    local is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1
+    local is_macos = vim.fn.has('mac') == 1
+
+    if is_windows then
+        return "start"
+    elseif is_macos then
+        return "open"
+    else
+        return "xdg-open"
+    end
+end
+
 ---Split string into a table of strings using a separator.
 ---@param inputString string The string to split.
 ---@param sep string The separator to use.
