@@ -2,7 +2,7 @@ local M = {}
 
 local defaults = {
     current_browser = "oil",
-    ask_confirmation = true,
+    ask_confirmation = false,
     debug = {
         enable = true,
         log_file = vim.fn.stdpath("cache") .. "/run.nvim.log"
@@ -52,6 +52,9 @@ local defaults = {
 }
 
 M.setup = function(opts)
+    if opts ~= nil then
+        opts["debug"] = nil
+    end
     M.options = vim.tbl_deep_extend("force", {}, defaults, opts or {})
 end
 

@@ -24,8 +24,12 @@ M.setup(nil)
 
 vim.api.nvim_create_user_command("RunFile", function()
     ---TODO: multiple files
-    ---TODO: different types async/term etc.
-    M.runfile()
+    M.runfile(false)
+end, { desc = "Run `command` on selected/hovered files" })
+
+vim.api.nvim_create_user_command("RunFileAsync", function()
+    ---TODO: multiple files
+    M.runfile(true)
 end, { desc = "Run `command` on selected/hovered files" })
 
 vim.api.nvim_create_user_command("RunDir", function()
@@ -33,7 +37,7 @@ vim.api.nvim_create_user_command("RunDir", function()
 end, { desc = "Run `command` on directory open in browser" })
 
 
-M.runfile = function()
+M.runfile = function(async)
     local bufnr = vim.api.nvim_get_current_buf()
 
     local ok, curr_file = pcall(M.get_current_file, bufnr)
@@ -51,7 +55,7 @@ M.runfile = function()
         command = config.options.default_actions[type].command
     end
 
-    local prompt = "Run: (Default: " .. command .. ") on " .. table.concat(file_list, " ") .. " "
+    local prompt = "[Run (Default: " .. command .. ") on " .. table.concat(file_list, " ") .. "]: "
 
     local input = vim.fn.input(prompt)
     if not input or string.len(input) == 0 then
@@ -80,16 +84,17 @@ M.runfile = function()
     end
 
     if not execute then
-        print("\nCancelled")
+        vim.notify("\nCancelled", vim.log.levels.ERROR)
         return
     end
-    print("\nRunning")
+    print()
+
     -- Run `input`
-    --
-    -- run.run_sync_new(input)
-    run.run_async(input)
-    -- run.run_async_new(input)
-    -- run.run_term(input)
+    if async then
+        run.run_term(input)
+    else
+        run.run_sync_new(input)
+    end
 end
 
 M.rundir = function()
@@ -116,7 +121,7 @@ M._fill_input = function(input, file_list)
 
     -- Replace numbered placeholders surrounded by spaces " %1 ", " %2 ", etc.
     for i, file in ipairs(file_list) do
-        local pattern = "%%" .. i
+        local pattern = " %%" .. i
         if result:match(pattern) then
             result = result:gsub(pattern, " " .. file)
             placeholder_found = true
@@ -124,8 +129,8 @@ M._fill_input = function(input, file_list)
     end
 
     -- Replace %f surrounded by spaces
-    local files_string = " " .. table.concat(file_list, " ") .. " "
-    if result:match("%%f") then
+    local files_string = " " .. table.concat(file_list, " ")
+    if result:match(" %%f") then
         result = result:gsub(" %%f", files_string)
         placeholder_found = true
     end
@@ -176,7 +181,7 @@ M._get_selected_type = function(file_list)
                 end
             else
                 type1 = "default"
-            end
+        end
         end
 
         if type ~= nil then

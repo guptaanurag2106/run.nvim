@@ -26,16 +26,12 @@ M.run_async = function(cmd)
     local job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data, _)
             for _, line in ipairs(data) do
-                -- if line ~= "" then
                 table.insert(stdout, line)
-                -- end
             end
         end,
         on_stderr = function(_, data, _)
             for _, line in ipairs(data) do
-                -- if line ~= "" then
                 table.insert(stderr, line)
-                -- end
             end
         end,
         on_exit = function(_, exit_code, _)
@@ -47,11 +43,12 @@ M.run_async = function(cmd)
             end
             if exit_code == 0 then
                 vim.schedule(function()
-                    vim.notify("\nCommand completed successfully", vim.log.levels.INFO)
+                    vim.notify("\nStatus: Completed Successfully (exit code 0)", vim.log.levels.INFO)
                 end)
             else
                 vim.schedule(function()
-                    vim.notify("\nCommand failed with exit code: " .. exit_code, vim.log.levels.ERROR)
+                    vim.notify("\nStatus: Completed Successfully (exit code " .. exit_code .. ")",
+                        vim.log.levels.ERROR)
                 end)
             end
         end
@@ -68,16 +65,115 @@ M.run_async_new = function(cmd)
         vim.notify(result.stdout, vim.log.levels.INFO)
         vim.notify(result.stderr, vim.log.levels.ERROR)
         if result.code == 0 then
-            vim.notify("\nCommand succeeded", vim.log.levels.INFO)
+            vim.notify("\nStatus: Completed Successfully (exit code 0)", vim.log.levels.INFO)
         else
-            vim.notify("\nCommand failed: " .. (result.stderr or ""), vim.log.levels.ERROR)
+            vim.notify("\nStatus: Completed Successfully (exit code " .. result.code .. ")",
+                vim.log.levels.ERROR)
         end
     end)
 end
 
+local create_reuse_win = function(window_name)
+    for _, win_id in ipairs(vim.api.nvim_list_wins()) do
+        local buf_id = vim.api.nvim_win_get_buf(win_id)
+        local buf_name = vim.api.nvim_buf_get_name(buf_id)
+
+        if buf_name == window_name then
+            vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, {})
+            -- vim.api.nvim_buf_set_name(buf_id, window_name)
+            -- vim.bo[buf_id].buftype = 'nofile'
+            -- vim.bo[buf_id].bufhidden = 'wipe'
+            -- vim.bo[buf_id].buflisted = true
+            -- vim.bo[buf_id].swapfile = false
+            return buf_id, win_id
+        end
+    end
+
+    vim.cmd("botright 15new")
+    local buf = vim.api.nvim_get_current_buf()
+    local win = vim.api.nvim_get_current_win()
+
+    vim.bo[buf].buftype = 'nofile'
+    vim.bo[buf].bufhidden = 'wipe'
+    vim.bo[buf].buflisted = true
+    vim.bo[buf].swapfile = false
+    vim.api.nvim_buf_set_name(buf, window_name)
+
+    return buf, win
+end
+
 M.run_term = function(cmd)
-    -- Open a terminal buffer and run the command
-    vim.cmd("botright new | terminal " .. cmd)
+    local buf, win = create_reuse_win("run://Command Output")
+
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+        "Running: " .. vim.inspect(cmd),
+        "Status: Running...",
+        "",
+        "Output:",
+        "-------",
+    })
+
+    vim.api.nvim_buf_add_highlight(buf, -1, 'Title', 0, 0, -1)
+    vim.api.nvim_buf_add_highlight(buf, -1, 'Special', 1, 0, -1)
+
+    vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':q<CR>', {
+        noremap = true,
+        silent = true
+    })
+
+    local _ = vim.fn.jobstart(cmd, {
+        on_stdout = function(_, data)
+            if data then
+                vim.schedule(function()
+                    if #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
+                        local line_count = vim.api.nvim_buf_line_count(buf)
+                        vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, data)
+                        vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
+                    end
+                end)
+            end
+        end,
+        on_stderr = function(_, data)
+            if data then
+                vim.schedule(function()
+                    if #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
+                        local line_count = vim.api.nvim_buf_line_count(buf)
+                        vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, data)
+                        for i = 0, #data - 1 do
+                            vim.api.nvim_buf_add_highlight(buf, -1, "ErrorMsg", line_count + i, 0, -1)
+                        end
+                        vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
+                    end
+                end)
+            end
+        end,
+        on_exit = function(_, exit_code)
+            vim.schedule(function()
+                if vim.api.nvim_buf_is_valid(buf) then
+                    local line_count = vim.api.nvim_buf_line_count(buf)
+                    vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
+                        exit_code == 0
+                        and "Status: Completed Successfully (exit code 0)"
+                        or "Status: Failed (exit code " .. exit_code .. ")"
+                    })
+                    -- vim.api.nvim_buf_clear_namespace(buf, -1, 1, 2)
+                    vim.api.nvim_buf_add_highlight(buf, -1, exit_code == 0 and 'String' or 'ErrorMsg', line_count, 0, -1)
+
+                    vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + 1, false, {
+                        "",
+                        "Command finished. Press 'q' to exit"
+                    })
+                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 1, 0, -1)
+                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 2, 0, -1)
+                    vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
+                end
+            end)
+        end,
+        stdout_buffered = false,
+        stderr_buffered = false
+    })
+
+    vim.cmd('wincmd p')
 end
 
 return M
