@@ -10,9 +10,8 @@ if package.loaded["oil"] then
         ---@return string|nil
         get_current_file = function(bufnr)
             local entry = require("oil").get_cursor_entry()
-            local dir = require("oil").get_current_dir(bufnr)
             if entry and entry.name then
-                return util.path_join(dir, entry.name)
+                return entry.name
             else
                 return nil
             end

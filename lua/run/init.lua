@@ -32,25 +32,29 @@ vim.api.nvim_create_user_command("RunFileAsync", function()
     M.runfile(true)
 end, { desc = "Run `command` on selected/hovered files" })
 
-vim.api.nvim_create_user_command("RunDir", function()
-    M.rundir()
-end, { desc = "Run `command` on directory open in browser" })
-
 
 M.runfile = function(async)
     local bufnr = vim.api.nvim_get_current_buf()
 
     local ok, curr_file = pcall(M.get_current_file, bufnr)
-    if not ok then
+    if not ok or curr_file == nil then
         print("Cannot get current file. Please ensure you are in the file browser: " .. config.options.current_browser)
         print(curr_file)
         return
     end
 
+    local ok1, curr_dir = pcall(M.get_current_dir, bufnr)
+    if not ok1 or curr_dir == nil or curr_dir:len() == 0 then
+        print("Cannot get current directory. Please ensure you are in the file browser: " ..
+            config.options.current_browser)
+        print(curr_dir)
+        return
+    end
+
     local file_list = { curr_file }
 
-    local type = M._get_selected_type(file_list)
-    local command = "xdg-open %f"
+    local type = M._get_selected_type(curr_dir, file_list)
+    local command = "{open} %f"
     if config.options.default_actions[type] ~= nil then
         command = config.options.default_actions[type].command
     end
@@ -62,7 +66,7 @@ M.runfile = function(async)
         input = command
     end
 
-    input = M._fill_input(input, file_list)
+    input = M._fill_input(input, curr_dir, file_list)
     input = input:gsub("%s+", " ")
 
     local execute = true
@@ -87,7 +91,7 @@ M.runfile = function(async)
         vim.notify("\nCancelled", vim.log.levels.ERROR)
         return
     end
-    print()
+    print("\n")
 
     -- Run `input`
     if async then
@@ -97,55 +101,71 @@ M.runfile = function(async)
     end
 end
 
-M.rundir = function()
-    local bufnr = vim.api.nvim_get_current_buf()
-    local ok, curr_dir = pcall(M.get_current_dir, bufnr)
-    if not ok then
-        print("Cannot get current directory. Please ensure you are in the file browser: " ..
-            config.options.current_browser)
-        print(curr_dir)
-        return
-    end
-end
-
----Fill values for ` %f`, ` %1` etc. The placeholders %x should have a space in the beginning, otherwise they are ignored
----If you want to use %x for some other purpose escape `%` with `%%`. All `%%` will be replaced by `%`
----Add %f at end if no %.. found
+---Fill values for `%f`, `%1`, `%d`
+---If you want to use %.. for some other purpose escape `%` with `%%`. All `%%` will be replaced by `%`
+---Add `%d/%f` at end if no %.. found
 ---@param input string User input command
+---@param curr_dir string current directory
 ---@param file_list table file list
 ---@return string formmated user input
-M._fill_input = function(input, file_list)
+M._fill_input = function(input, curr_dir, file_list)
     -- Flag to track if any placeholder was found
     local placeholder_found = false
     local result = input
 
+    local path_string = ""
+    for i, file in ipairs(file_list) do
+        if i > 1 then
+            path_string = path_string .. " " -- Add a space between elements
+        end
+        path_string = path_string .. curr_dir .. utils.path_separator .. file
+    end
+
     -- Replace numbered placeholders surrounded by spaces " %1 ", " %2 ", etc.
     for i, file in ipairs(file_list) do
-        local pattern = " %%" .. i
+        local pattern = "%%" .. i
         if result:match(pattern) then
             result = result:gsub(pattern, " " .. file)
             placeholder_found = true
         end
     end
 
-    -- Replace %f surrounded by spaces
-    local files_string = " " .. table.concat(file_list, " ")
-    if result:match(" %%f") then
-        result = result:gsub(" %%f", files_string)
+    -- Special Case: %d/%f equivalent to %d/%1 %d/%2....
+    if result:match("%%d" .. utils.path_separator .. "%%f") then
+        result = result:gsub("%%d" .. utils.path_separator .. "%%f", path_string)
         placeholder_found = true
     end
 
+    -- Replace %f surrounded by spaces
+    if result:match("%%f") then
+        local files_string = table.concat(file_list, " ")
+        result = result:gsub("%%f", files_string)
+        placeholder_found = true
+    end
+
+    -- Replace %d with current directory path
+    if result:match("%%d") then
+        result = result:gsub("%%d", curr_dir)
+        placeholder_found = true
+    end
+
+    -- Replace escaped % (%%) with %
     if result:match("%%") then
         result = result:gsub("%%", "%")
         placeholder_found = true
     end
 
-    -- If no placeholder was found, append files at the end
+    -- Replace open cmd
+    if result:match("{open}") then
+        result = result:gsub("{open}", utils.get_open_command())
+    end
+
+    -- If no placeholder was found, append filepaths at the end
     if not placeholder_found then
         if result:sub(-1) ~= " " then
             result = result .. " "
         end
-        result = result .. table.concat(file_list, " ")
+        result = result .. path_string
     end
 
     return result
@@ -155,13 +175,14 @@ end
 ---Returns type for the file list. See `config.options.default_actions` for all possible types
 ---@param file_list table
 ---@return string
-M._get_selected_type = function(file_list)
+M._get_selected_type = function(curr_dir, file_list)
     if file_list == nil then
         return "default"
     end
     local type = nil
 
     for _, file in pairs(file_list) do
+        file = utils.path_join(curr_dir, file)
         local type1 = nil
         for ext, _ in pairs(config.options.default_actions) do
             if ext:sub(1, 1) == "." and utils.ends_with(file, ext) then
@@ -181,7 +202,7 @@ M._get_selected_type = function(file_list)
                 end
             else
                 type1 = "default"
-        end
+            end
         end
 
         if type ~= nil then
@@ -200,7 +221,8 @@ M._get_selected_type = function(file_list)
     return type
 end
 
----Get path of selected file (1)
+---Get name of selected file (1)
+---For the path also user get_current_dir
 ---@param bufnr integer bufnr of the open browser
 ---@return string|nil Path of the selected file
 M.get_current_file = function(bufnr)

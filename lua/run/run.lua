@@ -109,8 +109,8 @@ M.run_term = function(cmd)
         "Running: " .. vim.inspect(cmd),
         "Status: Running...",
         "",
-        "Output:",
-        "-------",
+        "Output",
+        "--------------------------------------------------------------------------------",
     })
 
     vim.api.nvim_buf_add_highlight(buf, -1, 'Title', 0, 0, -1)
@@ -152,20 +152,22 @@ M.run_term = function(cmd)
                 if vim.api.nvim_buf_is_valid(buf) then
                     local line_count = vim.api.nvim_buf_line_count(buf)
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
+                        "",
                         exit_code == 0
                         and "Status: Completed Successfully (exit code 0)"
                         or "Status: Failed (exit code " .. exit_code .. ")"
                     })
                     -- vim.api.nvim_buf_clear_namespace(buf, -1, 1, 2)
-                    vim.api.nvim_buf_add_highlight(buf, -1, exit_code == 0 and 'String' or 'ErrorMsg', line_count, 0, -1)
+                    vim.api.nvim_buf_add_highlight(buf, -1, exit_code == 0 and 'String' or 'ErrorMsg', line_count + 1, 0,
+                        -1)
 
-                    vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + 1, false, {
+                    vim.api.nvim_buf_set_lines(buf, line_count + 2, line_count + 2, false, {
                         "",
                         "Command finished. Press 'q' to exit"
                     })
-                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 1, 0, -1)
                     vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 2, 0, -1)
-                    vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
+                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 3, 0, -1)
+                    vim.api.nvim_win_set_cursor(win, { line_count + 3 - 1, 0 })
                 end
             end)
         end,
@@ -173,7 +175,7 @@ M.run_term = function(cmd)
         stderr_buffered = false
     })
 
-    vim.cmd('wincmd p')
+    -- vim.cmd('wincmd p') -- Focus on the previous window
 end
 
 return M
