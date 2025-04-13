@@ -17,18 +17,15 @@ M.setup         = function(opts)
             end
         end
     end
+    vim.api.nvim_create_user_command("RunFile", function(args)
+        M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, false)
+    end, { desc = "Run `command` on selected/hovered files", range = true })
+
+    vim.api.nvim_create_user_command("RunFileAsync", function(args)
+        M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, true)
+    end, { desc = "Run `command` on selected/hovered files", range = true })
 end
 
-
-M.setup(nil)
-
-vim.api.nvim_create_user_command("RunFile", function(args)
-    M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, false)
-end, { desc = "Run `command` on selected/hovered files", range = true })
-
-vim.api.nvim_create_user_command("RunFileAsync", function(args)
-    M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, true)
-end, { desc = "Run `command` on selected/hovered files", range = true })
 
 
 ---Run command on the selected file list
@@ -40,16 +37,15 @@ M.runfile = function(range, async)
 
     local ok, file_list = pcall(M.get_current_files, range, bufnr)
     if not ok or file_list == nil then
-        print("Cannot get current files. Please ensure you are in the file browser: " .. config.options.current_browser)
-        print(file_list)
+        print("Cannot get current files. Please ensure you are in the file browser: " ..
+        config.options.current_browser .. "\n" .. file_list)
         return
     end
 
     local ok1, curr_dir = pcall(M.get_current_dir, bufnr)
     if not ok1 or curr_dir == nil or curr_dir:len() == 0 then
         print("Cannot get current directory. Please ensure you are in the file browser: " ..
-            config.options.current_browser)
-        print(curr_dir)
+            config.options.current_browser .. "\n" .. curr_dir)
         return
     end
 
@@ -200,6 +196,8 @@ M._get_selected_type = function(curr_dir, file_list)
                     type1 = "dir"
                 elseif stat.type == "file" and vim.fn.executable(file) == 1 then --TODO:check stat.mode bitwise?? cross platform??
                     type1 = "exe"
+                else
+                    type1 = "default"
                 end
             else
                 type1 = "default"
@@ -207,7 +205,7 @@ M._get_selected_type = function(curr_dir, file_list)
         end
 
         if type ~= nil then
-            if type1 ~= type then
+            if type ~= type1 then
                 type = "multiple"
                 break
             end

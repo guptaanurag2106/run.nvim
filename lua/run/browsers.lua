@@ -3,56 +3,54 @@ local util = require("run.utils")
 
 M.browsers = {}
 
-if package.loaded["oil"] then
-    M.browsers["oil"] = {
-        ---Gets current files name under cursor for oil
-        ---@param range table Range of selection (from user_command `command` params)
-        ---@param bufnr integer The buffer number
-        ---@return table|nil
-        get_current_files = function(range, bufnr)
-            local result = {}
-            if range ~= nil and range["line1"] ~= nil and range["line2"] ~= nil then
-                for line = range["line1"], range["line2"] do
+M.browsers["oil"] = {
+    ---Gets current files name under cursor for oil
+    ---@param range table Range of selection (from user_command `command` params)
+    ---@param bufnr integer The buffer number
+    ---@return table|nil
+    get_current_files = function(range, bufnr)
+        local result = {}
+        if range ~= nil and range["line1"] ~= nil and range["line2"] ~= nil then
+            for line = range["line1"], range["line2"] do
+                local entry = require("oil").get_entry_on_line(bufnr, line)
+                if entry and entry.name then
+                    table.insert(result, entry.name)
+                end
+            end
+        else
+            -- --Get mode
+            local mode = vim.api.nvim_get_mode().mode
+            if mode == 'v' or mode == 'V' or mode == '\22' then
+                local start_pos = vim.fn.getpos("'<")
+                local end_pos = vim.fn.getpos("'>")
+                local start_line = start_pos[2]
+                local end_line = end_pos[2]
+
+                for line = start_line, end_line do
                     local entry = require("oil").get_entry_on_line(bufnr, line)
                     if entry and entry.name then
                         table.insert(result, entry.name)
                     end
                 end
             else
-                -- --Get mode
-                local mode = vim.api.nvim_get_mode().mode
-                if mode == 'v' or mode == 'V' or mode == '\22' then
-                    local start_pos = vim.fn.getpos("'<")
-                    local end_pos = vim.fn.getpos("'>")
-                    local start_line = start_pos[2]
-                    local end_line = end_pos[2]
-
-                    for line = start_line, end_line do
-                        local entry = require("oil").get_entry_on_line(bufnr, line)
-                        if entry and entry.name then
-                            table.insert(result, entry.name)
-                        end
-                    end
-                else
-                    local entry = require("oil").get_cursor_entry()
-                    if entry and entry.name then
-                        table.insert(result, entry.name)
-                    end
+                local entry = require("oil").get_cursor_entry()
+                if entry and entry.name then
+                    table.insert(result, entry.name)
                 end
             end
-
-            return result
-        end,
-
-        ---Gets current open directory name for oil
-        ---@param bufnr integer The buffer number
-        ---@return string|nil
-        get_current_dir = function(bufnr)
-            local dir = require("oil").get_current_dir(bufnr)
-            return dir
         end
-    }
-end
+
+        return result
+    end,
+
+    ---Gets current open directory name for oil
+    ---@param bufnr integer The buffer number
+    ---@return string|nil
+    get_current_dir = function(bufnr)
+        local dir = require("oil").get_current_dir(bufnr)
+        return dir
+    end
+}
 
 ---Register get_current_files, get_current_dir functions for a browser
 ---@param browser_name string The name of the browser e.g. oil/netrw etc.
