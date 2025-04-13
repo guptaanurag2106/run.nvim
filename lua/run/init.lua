@@ -22,24 +22,26 @@ end
 
 M.setup(nil)
 
-vim.api.nvim_create_user_command("RunFile", function()
-    ---TODO: multiple files
-    M.runfile(false)
-end, { desc = "Run `command` on selected/hovered files" })
+vim.api.nvim_create_user_command("RunFile", function(args)
+    M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, false)
+end, { desc = "Run `command` on selected/hovered files", range = true })
 
-vim.api.nvim_create_user_command("RunFileAsync", function()
-    ---TODO: multiple files
-    M.runfile(true)
-end, { desc = "Run `command` on selected/hovered files" })
+vim.api.nvim_create_user_command("RunFileAsync", function(args)
+    M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, true)
+end, { desc = "Run `command` on selected/hovered files", range = true })
 
 
-M.runfile = function(async)
+---Run command on the selected file list
+---@param range table Range of selection (from user_command `command` params)
+---@param async boolean Run command in async mode or not
+---@return nil
+M.runfile = function(range, async)
     local bufnr = vim.api.nvim_get_current_buf()
 
-    local ok, curr_file = pcall(M.get_current_file, bufnr)
-    if not ok or curr_file == nil then
-        print("Cannot get current file. Please ensure you are in the file browser: " .. config.options.current_browser)
-        print(curr_file)
+    local ok, file_list = pcall(M.get_current_files, range, bufnr)
+    if not ok or file_list == nil then
+        print("Cannot get current files. Please ensure you are in the file browser: " .. config.options.current_browser)
+        print(file_list)
         return
     end
 
@@ -51,15 +53,13 @@ M.runfile = function(async)
         return
     end
 
-    local file_list = { curr_file }
-
     local type = M._get_selected_type(curr_dir, file_list)
     local command = "{open} %f"
     if config.options.default_actions[type] ~= nil then
         command = config.options.default_actions[type].command
     end
 
-    local prompt = "[Run (Default: " .. command .. ") on " .. table.concat(file_list, " ") .. "]: "
+    local prompt = "[Run (Default: " .. command .. ") on " .. table.concat(file_list, ", ") .. "]: "
 
     local input = vim.fn.input(prompt)
     if not input or string.len(input) == 0 then
@@ -91,12 +91,12 @@ M.runfile = function(async)
         vim.notify("\nCancelled", vim.log.levels.ERROR)
         return
     end
-    print("\n")
 
     -- Run `input`
     if async then
         run.run_term(input)
     else
+        print("\n")
         run.run_sync_new(input)
     end
 end
@@ -173,6 +173,7 @@ end
 
 
 ---Returns type for the file list. See `config.options.default_actions` for all possible types
+---@param curr_dir string
 ---@param file_list table
 ---@return string
 M._get_selected_type = function(curr_dir, file_list)
@@ -223,10 +224,11 @@ end
 
 ---Get name of selected file (1)
 ---For the path also user get_current_dir
+---@param range table Range of selection (from user_command `command` params)
 ---@param bufnr integer bufnr of the open browser
----@return string|nil Path of the selected file
-M.get_current_file = function(bufnr)
-    return _browsers.get_current_file(bufnr)
+---@return table|nil Path of the selected file
+M.get_current_files = function(range, bufnr)
+    return _browsers.get_current_files(range, bufnr)
 end
 
 ---Get path of open folder in browser

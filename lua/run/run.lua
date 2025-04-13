@@ -123,7 +123,7 @@ M.run_term = function(cmd)
 
     local _ = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data)
-            if data then
+            if data and vim.api.nvim_buf_is_loaded(buf) then
                 vim.schedule(function()
                     if #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
                         local line_count = vim.api.nvim_buf_line_count(buf)
@@ -134,7 +134,7 @@ M.run_term = function(cmd)
             end
         end,
         on_stderr = function(_, data)
-            if data then
+            if data and vim.api.nvim_buf_is_loaded(buf) then
                 vim.schedule(function()
                     if #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
                         local line_count = vim.api.nvim_buf_line_count(buf)
@@ -149,7 +149,7 @@ M.run_term = function(cmd)
         end,
         on_exit = function(_, exit_code)
             vim.schedule(function()
-                if vim.api.nvim_buf_is_valid(buf) then
+                if vim.api.nvim_buf_is_loaded(buf) then
                     local line_count = vim.api.nvim_buf_line_count(buf)
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
                         "",

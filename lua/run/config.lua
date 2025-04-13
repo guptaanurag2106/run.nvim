@@ -23,7 +23,7 @@ local defaults = {
             description = "Run shell files"
         },
         [".tar.gz"] = {
-            command = "tar xzvf %f -C %d",
+            command = "tar xzvf %d/%f -C %d",
             description = "Extracts archive file"
         },
         [".exe"] = {
