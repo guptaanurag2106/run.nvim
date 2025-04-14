@@ -23,7 +23,7 @@ local defaults = {
             description = "Run shell files"
         },
         [".tar.gz"] = {
-            command = "tar xzvf %d/%f -C %d",
+            command = "tar xzvf %d" .. utils.path_separator .. "%f -C %d",
             description = "Extracts archive file"
         },
         [".exe"] = {
@@ -39,24 +39,16 @@ local defaults = {
             description = "chmod +x on the file (if no extension and not executable)"
         },
         ["dir"] = {
-            command = "tar czvf %1.tar.gz -C %d %f",
+            command = "tar czvf %d" .. utils.path_separator .. "%1.tar.gz -C %d %f",
             description = "tar.gz on the folder or multiple folders"
         },
         ["multiple"] = {
-            command = "tar czvf %1.tar.gz -C %d %f",
+            command = "tar czvf %d" .. utils.path_separator .. "%1.tar.gz -C %d %f",
             description = "tar.gz all the files/folders (if mixture of file/folder types)"
         },
         ["default"] = {
             command = "{open} %d" .. utils.path_separator .. "%f",
             description = "Open file with system default application"
-        },
-        [".zip"] = {
-            command = "unzip %f -d %d",
-            description = "Extracts zip archive"
-        },
-        [".rar"] = {
-            command = "unrar x %f %d",
-            description = "Extracts RAR archive"
         },
         [".jar"] = {
             command = "java -jar %d" .. utils.path_separator .. "%f",
@@ -77,13 +69,13 @@ local defaults = {
         [".c"] = {
             command = "gcc %d" ..
                 utils.path_separator ..
-                "%f -o %d" .. utils.path_separator .. "a.out && %d" .. utils.path_separator .. "a.out",
+                "%f -o %d" .. utils.path_separator .. "a.out",
             description = "Compiles and runs C file"
         },
         [".cpp"] = {
             command = "g++ %d" ..
                 utils.path_separator ..
-                "%f -o %d" .. utils.path_separator .. "a.out && %d" .. utils.path_separator .. "a.out",
+                "%f -o %d" .. utils.path_separator .. "a.out",
             description = "Compiles and runs C++ file"
         },
         [".java"] = {
@@ -92,7 +84,7 @@ local defaults = {
         },
         [".md"] = {
             command = "pandoc %d" ..
-                utils.path_separator .. "%f -o %1.html && {open} %d" .. utils.path_separator .. "%1.html",
+                utils.path_separator .. "%f -o %1.html",
             description = "Converts Markdown to HTML and opens it"
         },
         [".json"] = {
@@ -100,7 +92,7 @@ local defaults = {
             description = "Pretty-prints JSON file"
         },
         [".csv"] = {
-            command = "column -t -s, %d" .. utils.path_separator .. "%f | less -S",
+            command = "column -t -s, %d" .. utils.path_separator .. "%f | less",
             description = "Displays CSV file in columns"
         },
         [".mp4"] = {

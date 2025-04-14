@@ -103,6 +103,7 @@ local create_reuse_win = function(window_name)
 end
 
 M.run_term = function(cmd)
+    print(cmd)
     local buf, win = create_reuse_win("run://Command Output")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {

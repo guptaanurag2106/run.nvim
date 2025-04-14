@@ -121,7 +121,7 @@ M._fill_input = function(input, curr_dir, file_list)
     for i, file in ipairs(file_list) do
         local pattern = "%%" .. i
         if result:match(pattern) then
-            result = result:gsub(pattern, " " .. file)
+            result = result:gsub(pattern, file)
             placeholder_found = true
         end
     end
