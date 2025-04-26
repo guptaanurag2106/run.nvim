@@ -5,9 +5,13 @@ local defaults = {
     current_browser = "oil",
     ask_confirmation = false,
     open_cmd = utils.get_open_command(),
-    debug = {
+    populate_qflist_sync = false,
+    populate_qflist_async = true,
+    open_qflist_sync = false,
+    open_qflist_async = false,
+    history = {
         enable = true,
-        log_file = vim.fn.stdpath("cache") .. utils.path_separator .. "run.nvim.log"
+        history_file = vim.fn.stdpath("cache") .. utils.path_separator .. "run.nvim.hist"
     },
     default_actions = {
         [".py"] = {
@@ -115,12 +119,15 @@ local defaults = {
 }
 
 M.setup = function(opts)
-    if opts ~= nil then
-        opts["debug"] = nil
-    end
     M.options = vim.tbl_deep_extend("force", {}, defaults, opts or {})
     if M.options.open_cmd == nil or M.options.open_cmd:len() == 0 then
         M.options.open_cmd = utils.get_open_command()
+    end
+    if not M.options.populate_qflist_async then
+        M.options.open_qflist_async = false
+    end
+    if not M.options.populate_qflist_sync then
+        M.options.open_qflist_sync = false
     end
 end
 

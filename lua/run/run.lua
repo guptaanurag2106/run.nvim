@@ -1,7 +1,7 @@
 local utils = require("run.utils")
 local M = {}
 
-M.run_sync_new = function(cmd)
+M.run_sync_new = function(cmd, populate_qflist, open_qflist)
     cmd = utils.split(cmd, " ")
     -- Using newer vim.system API (Neovim 0.10+)
     local result = vim.system(cmd):wait()
@@ -13,6 +13,14 @@ M.run_sync_new = function(cmd)
         vim.notify("\nCommand succeeded", vim.log.levels.INFO)
     else
         vim.notify("\nCommand failed with code: " .. result.code, vim.log.levels.ERROR)
+    end
+
+    if populate_qflist then
+        vim.fn.setqflist({ result.stdout, result.stderr }, "r")
+    end
+
+    if open_qflist then
+        vim.cmd('copen')
     end
 end
 
@@ -102,16 +110,16 @@ local create_reuse_win = function(window_name)
     return buf, win
 end
 
-M.run_term = function(cmd)
+M.run_term = function(cmd, populate_qflist, open_qflist)
     print(cmd)
     local buf, win = create_reuse_win("run://Command Output")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
         "Running: " .. vim.inspect(cmd),
-        "Status: Running...",
         "",
         "Output",
         "--------------------------------------------------------------------------------",
+        "",
     })
 
     vim.api.nvim_buf_add_highlight(buf, -1, 'Title', 0, 0, -1)
@@ -121,29 +129,38 @@ M.run_term = function(cmd)
         noremap = true,
         silent = true
     })
+    local qf_list = {}
 
     local _ = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data)
-            if data and vim.api.nvim_buf_is_loaded(buf) then
+            if data and #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
                 vim.schedule(function()
-                    if #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
+                    if vim.api.nvim_buf_is_loaded(buf) then
                         local line_count = vim.api.nvim_buf_line_count(buf)
                         vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, data)
                         vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
+                    end
+
+                    if populate_qflist then
+                        table.insert(qf_list, { text = table.concat(data, "\n") })
                     end
                 end)
             end
         end,
         on_stderr = function(_, data)
-            if data and vim.api.nvim_buf_is_loaded(buf) then
+            if data and #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
                 vim.schedule(function()
-                    if #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
+                    if vim.api.nvim_buf_is_loaded(buf) then
                         local line_count = vim.api.nvim_buf_line_count(buf)
                         vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, data)
                         for i = 0, #data - 1 do
                             vim.api.nvim_buf_add_highlight(buf, -1, "ErrorMsg", line_count + i, 0, -1)
                         end
                         vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
+                    end
+
+                    if populate_qflist then
+                        table.insert(qf_list, { text = table.concat(data, "\n") })
                     end
                 end)
             end
@@ -153,28 +170,35 @@ M.run_term = function(cmd)
                 if vim.api.nvim_buf_is_loaded(buf) then
                     local line_count = vim.api.nvim_buf_line_count(buf)
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
-                        "",
                         exit_code == 0
                         and "Status: Completed Successfully (exit code 0)"
                         or "Status: Failed (exit code " .. exit_code .. ")"
                     })
                     -- vim.api.nvim_buf_clear_namespace(buf, -1, 1, 2)
-                    vim.api.nvim_buf_add_highlight(buf, -1, exit_code == 0 and 'String' or 'ErrorMsg', line_count + 1, 0,
+                    vim.api.nvim_buf_add_highlight(buf, -1, exit_code == 0 and 'String' or 'ErrorMsg', line_count, 0,
                         -1)
 
-                    vim.api.nvim_buf_set_lines(buf, line_count + 2, line_count + 2, false, {
+                    vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + 1, false, {
                         "",
                         "Command finished. Press 'q' to exit"
                     })
+                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 1, 0, -1)
                     vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 2, 0, -1)
-                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 3, 0, -1)
-                    vim.api.nvim_win_set_cursor(win, { line_count + 3 - 1, 0 })
+                    vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
+                end
+                if populate_qflist then
+                    vim.fn.setqflist(qf_list, "r")
+                end
+                -- vim.diagnostic.setqflist(qf_list, "r")
+                if open_qflist then
+                    vim.cmd("copen")
                 end
             end)
         end,
         stdout_buffered = false,
         stderr_buffered = false
     })
+
 
     -- vim.cmd('wincmd p') -- Focus on the previous window
 end

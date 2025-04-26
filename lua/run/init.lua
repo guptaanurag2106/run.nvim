@@ -23,9 +23,8 @@ M.setup         = function(opts)
 
     vim.api.nvim_create_user_command("RunFileAsync", function(args)
         M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, true)
-    end, { desc = "Run `command` on selected/hovered files", range = true })
+    end, { desc = "Run `command` asynchronously on selected/hovered files", range = true })
 end
-
 
 
 ---Run command on the selected file list
@@ -38,7 +37,7 @@ M.runfile = function(range, async)
     local ok, file_list = pcall(M.get_current_files, range, bufnr)
     if not ok or file_list == nil then
         print("Cannot get current files. Please ensure you are in the file browser: " ..
-        config.options.current_browser .. "\n" .. file_list)
+            config.options.current_browser .. "\n" .. file_list)
         return
     end
 
@@ -90,10 +89,10 @@ M.runfile = function(range, async)
 
     -- Run `input`
     if async then
-        run.run_term(input)
+        run.run_term(input, config.options.populate_qflist_async, config.options.open_qflist_async)
     else
         print("\n")
-        run.run_sync_new(input)
+        run.run_sync_new(input, config.options.populate_qflist_sync, config.options.open_qflist_sync)
     end
 end
 
@@ -239,3 +238,5 @@ end
 return M
 
 --TODO:multiple action per file (options)
+--TODO:history
+--TODO:quickfile??
