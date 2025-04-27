@@ -2,18 +2,165 @@
  
 Run.nvim is a lightweight Neovim plugin that streamlines file operations within file explorers like Oil and netrw.
 Inspired by the convenience of Emacs’s Dired mode([dired-do-shell-command](https://www.gnu.org/software/emacs/manual/html_node/emacs/Shell-Commands-in-Dired.html)),
-Run.nvim lets you quickly execute common file commands (such as extracting archives, changing permissions, or opening files) directly from your file browser.
+Run.nvim lets you quickly execute common file commands (such as extracting archives, changing permissions, or opening files)
+directly from your file browser.
+
+You can simply select files (by placing your cursor on the line, or visual-select a list of files),
+call the plugin and run commands on those files
+
+## Why Run.nvim
+When working in Neovim, you often need to perform various operations on files -
+running scripts, extracting archives, compiling code, or opening files with
+external applications.
+
+Run.nvim  makes these tasks easier by:
+- Providing sensible default commands based on file types (Not having to remember the exact commands)
+- Executing commands without leaving your editor
+- Handling path construction automatically with a simple placeholder system (Useful for 
+  operating on nested files, w.r.t. the `cwd`)
+- Displaying command output directly in Neovim in a separate buffer, to easily copy/modify the output
+- Supporting both synchronous and asynchronous execution options
+
+The plugin is particularly useful for file browser workflows, where you're already navigating
+your filesystem within Neovim and want to perform operations on the files you're browsing.
+
+## Installation
+
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+    "guptaanurag2106/run.nvim",
+     config = function()
+            require("run").setup({})
+     end,
+}
+```
+
+### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
+
+```lua
+use {
+    "guptaanurag2106/run.nvim",
+     config = function()
+            require("run").setup({})
+     end
+}
+```
+
+## Quick Start
+
+1. Navigate to a file in your file browser (oil.nvim by default)
+2. Press `:RunFile` to run the appropriate command for that file type
+3. For background execution with live output in a new buffer, use `:RunFileAsync` instead
+
+## User Commands and Keymaps
+The plugin creates two user commands `RunFile`, `RunFileAsync`. No keymaps are however
+created and it's left to the user. An example keymap could be as simple as
+```lua
+vim.keymap.set("n", "<leader>rf", "<CMD>RunFileAsync<CR>", { desc = "(Run.nvim) Async" })
+```
 
 ## Features
-   - Quick File Detection:
-        * Retrieves the full path of the file or directory under the cursor with ease.
-   - Predefined Commands:
-        * Offers a set of ready-to-use commands like tar extraction, chmod +x, xdg-open, and more.
-   - Custom Actions:
-        * Easily configure your own commands using placeholders, making repetitive tasks faster and error-free.
-   - Flexible Execution:
-        * Choose to run commands synchronously, asynchronously, or even launch them in a terminal window, so you can tailor the workflow to your needs.
+- Quick File Detection:
+    * Retrieves the full path of the file or directory under the cursor with ease.
+- Predefined Commands:
+    * Offers a set of ready-to-use commands like tar extraction, chmod +x, xdg-open, and more.
+- Custom Actions:
+    * Easily configure your own commands using placeholders, making repetitive tasks faster and error-free.
+- Flexible Execution:
+    * Choose to run commands synchronously, asynchronously and populate the qflist with the output
 
+## Configuration
 
-## Overview
-Run.nvim aims to reduce context switching by integrating powerful file operations directly into your file explorer.
+Run.nvim works out of the box, but you can customize it to fit your workflow:
+
+```lua
+require("run").setup({
+  -- File browser to use (default: "oil")
+  current_browser = "oil",
+  
+  -- Ask for confirmation before executing commands
+  ask_confirmation = false,
+  
+  -- Auto-populate quickfix list with command output for async commands
+  populate_qflist_async = true,
+  
+  -- Enable command history
+  history = {
+    enable = true,
+    history_file = vim.fn.stdpath("cache") .. "/run.nvim.hist"
+  },
+  
+  -- Customize default actions for specific file types
+  default_actions = {
+    -- Example: custom Python command
+    [".py"] = {
+      command = "python -m %f",
+      description = "Run Python module"
+    },
+    -- Add your own commands here
+  }
+})
+```
+
+## Using with Other File Browsers
+
+Run.nvim works with oil.nvim by default, but you can use it with any file browser:
+
+```lua
+-- Example: Integration with nvim-tree
+require("run").register("nvim-tree", "get_current_files", function()
+  -- Return list of selected file names in nvim-tree
+  -- Implementation depends on nvim-tree API
+  return {"file1.txt", "file2.py"}
+end)
+
+require("run").register("nvim-tree", "get_current_dir", function()
+  -- Return current directory path in nvim-tree
+  return "/path/to/directory"
+end)
+
+-- Set nvim-tree as current browser
+require("run").set_current_browser("nvim-tree")
+```
+
+## Command Placeholders
+
+Run.nvim uses a simple placeholder system for paths:
+
+- `%f` - All file/folder names, space-separated
+- `%d` - Current directory path
+- `%1`, `%2`, etc. - Individual file/folder names
+- `%d/%f` - Full paths for all files
+- `%%` - Literal % character (For commands that need things like %1, sed for e.g.)
+- `{open}` - System-specific open command
+
+## Default Actions
+
+Run.nvim comes with sensible defaults for common file types:
+
+- **Python** (`.py`): Runs with Python interpreter
+- **Bash/Shell** (`.sh`, `.bash`): Executes scripts
+- **Archives** (`.tar.gz`): Extract to current directory
+- **JavaScript** (`.js`): Runs with Node.js
+- **Java** (`.java`, `.jar`): Compiles and runs Java files
+- **C/C++** (`.c`, `.cpp`): Compiles and runs source files
+- **Markdown** (`.md`): Converts to HTML with pandoc
+- **Media** (`.mp4`, `.mp3`): Opens with VLC
+- **Web** (`.html`): Opens in default browser
+- **And some more...**
+
+You can override any of these or add your own in the configuration.
+
+## Documentation
+
+For complete documentation, run `:help run.nvim` in Neovim after installation.
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+## License
+
+MIT

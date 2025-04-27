@@ -4,7 +4,7 @@ local M = {}
 local defaults = {
     current_browser = "oil",
     ask_confirmation = false,
-    open_cmd = utils.get_open_command(),
+    open_cmd = nil,
     populate_qflist_sync = false,
     populate_qflist_async = true,
     open_qflist_sync = false,
@@ -128,6 +128,9 @@ M.setup = function(opts)
     end
     if not M.options.populate_qflist_sync then
         M.options.open_qflist_sync = false
+    end
+    if not M.options.open_cmd then
+        M.options.open_cmd = utils.get_open_command()
     end
 end
 

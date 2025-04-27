@@ -34,14 +34,14 @@ end
 M.runfile = function(range, async)
     local bufnr = vim.api.nvim_get_current_buf()
 
-    local ok, file_list = pcall(M.get_current_files, range, bufnr)
+    local ok, file_list = pcall(M._get_current_files, range, bufnr)
     if not ok or file_list == nil then
         print("Cannot get current files. Please ensure you are in the file browser: " ..
             config.options.current_browser .. "\n" .. file_list)
         return
     end
 
-    local ok1, curr_dir = pcall(M.get_current_dir, bufnr)
+    local ok1, curr_dir = pcall(M._get_current_dir, bufnr)
     if not ok1 or curr_dir == nil or curr_dir:len() == 0 then
         print("Cannot get current directory. Please ensure you are in the file browser: " ..
             config.options.current_browser .. "\n" .. curr_dir)
@@ -101,7 +101,7 @@ end
 ---Add `%d/%f` at end if no %.. found
 ---@param input string User input command
 ---@param curr_dir string current directory
----@param file_list table file list
+---@param file_list table file list (just names not full paths)
 ---@return string formmated user input
 M._fill_input = function(input, curr_dir, file_list)
     -- Flag to track if any placeholder was found
@@ -152,7 +152,7 @@ M._fill_input = function(input, curr_dir, file_list)
 
     -- Replace open cmd
     if result:match("{open}") then
-        result = result:gsub("{open}", utils.get_open_command())
+        result = result:gsub("{open}", config.options.open_cmd)
     end
 
     -- If no placeholder was found, append filepaths at the end
@@ -219,20 +219,35 @@ M._get_selected_type = function(curr_dir, file_list)
     return type
 end
 
----Get name of selected file (1)
+---Get names of selected file
 ---For the path also user get_current_dir
 ---@param range table Range of selection (from user_command `command` params)
 ---@param bufnr integer bufnr of the open browser
 ---@return table|nil Path of the selected file
-M.get_current_files = function(range, bufnr)
+M._get_current_files = function(range, bufnr)
     return _browsers.get_current_files(range, bufnr)
 end
 
 ---Get path of open folder in browser
 ---@param bufnr integer bufnr of the open browser
 ---@return string|nil Path of the open folder
-M.get_current_dir = function(bufnr)
+M._get_current_dir = function(bufnr)
     return _browsers.get_current_dir(bufnr)
+end
+
+---Register get_current_files, get_current_dir functions for a browser
+---@param browser_name string The name of the browser e.g. oil/netrw etc.
+---@param func_name string The name of the function either get_current_files/get_current_dir
+---@param func function func_name functions for the `browser_name`
+M.register = function(browser_name, func_name, func)
+    _browsers.register(browser_name, func_name, func)
+end
+
+---Sets the current browser in use
+---The functions should be implemented first. See `register(browser_name, func_name, func)`
+---@param browser_name string The name of the browser you want to set as current
+M.set_current_browser = function(browser_name)
+    _browsers.set_current_browser(browser_name)
 end
 
 return M
@@ -240,3 +255,5 @@ return M
 --TODO:multiple action per file (options)
 --TODO:history
 --TODO:quickfile??
+--TODO:Multiple RunFile at same time?
+--TODO:command chaining? &&
