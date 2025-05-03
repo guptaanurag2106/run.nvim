@@ -8,8 +8,7 @@ directly from your file browser.
 You can simply select files (by placing your cursor on the line, or visual-select a list of files),
 call the plugin and run commands on those files
 
-https://github.com/user-attachments/assets/5562514d-1aa6-4c43-a98b-a173cbaa9c38
-
+[Demo](https://github.com/guptaanurag2106/run.nvim/blob/main/assets/demo.mp4)
 
 <!-- TOC -->
 
