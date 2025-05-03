@@ -72,7 +72,7 @@ use {
 
 ## Quick Start
 
-1. Navigate to a file in your file browser (oil.nvim by default)
+1. Navigate to a file in your file browser ([oil.nvim](https://github.com/stevearc/oil.nvim) by default)
 2. Press `:RunFile` to run the appropriate command for that file type
 3. For background execution with live output in a new buffer, use `:RunFileAsync` instead
 
@@ -128,7 +128,7 @@ require("run").setup({
 
 ## Using with Other File Browsers
 
-Run.nvim works with oil.nvim by default, but you can use it with any file browser:
+Run.nvim works with [oil.nvim](https://github.com/stevearc/oil.nvim) by default, but you can use it with any file browser:
 
 ```lua
 -- Example: Integration with nvim-tree
@@ -167,7 +167,7 @@ Run.nvim comes with sensible defaults for common file types:
 - **Archives** (`.tar.gz`): Extract to current directory
 - **JavaScript** (`.js`): Runs with Node.js
 - **Java** (`.java`, `.jar`): Compiles and runs Java files
-- **C/C++** (`.c`, `.cpp`): Compiles and runs source files
+- **C/C++** (`.c`, `.cpp`): Compiles source files
 - **Markdown** (`.md`): Converts to HTML with pandoc
 - **Media** (`.mp4`, `.mp3`): Opens with VLC
 - **Web** (`.html`): Opens in default browser
