@@ -1,12 +1,34 @@
 # Run.nvim
  
 Run.nvim is a lightweight Neovim plugin that streamlines file operations within file explorers like Oil and netrw.
-Inspired by the convenience of Emacs’s Dired mode([dired-do-shell-command](https://www.gnu.org/software/emacs/manual/html_node/emacs/Shell-Commands-in-Dired.html)),
-Run.nvim lets you quickly execute common file commands (such as extracting archives, changing permissions, or opening files)
+Inspired by the convenience of Emacs’ Dired mode([dired-do-shell-command](https://www.gnu.org/software/emacs/manual/html_node/emacs/Shell-Commands-in-Dired.html)),
+Run.nvim lets you quickly execute common file commands (such as extracting archives, changing permissions, or running common file types)
 directly from your file browser.
 
 You can simply select files (by placing your cursor on the line, or visual-select a list of files),
 call the plugin and run commands on those files
+
+https://github.com/user-attachments/assets/5562514d-1aa6-4c43-a98b-a173cbaa9c38
+
+
+<!-- TOC -->
+
+- [Why Run.nvim](#why-runnvim)
+- [Installation](#installation)
+  - [Using lazy.nvim](#using-lazynvim)
+  - [Using packer.nvim](#using-packernvim)
+- [Quick Start](#quick-start)
+- [User Commands and Keymaps](#user-commands-and-keymaps)
+- [Features](#features)
+- [Configuration](#configuration)
+- [Using with Other File Browsers](#using-with-other-file-browsers)
+- [Command Placeholders](#command-placeholders)
+- [Default Actions](#default-actions)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
+
+<!-- /TOC -->
 
 ## Why Run.nvim
 When working in Neovim, you often need to perform various operations on files -
