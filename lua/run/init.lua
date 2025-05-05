@@ -48,20 +48,36 @@ M.runfile = function(range, async)
         return
     end
 
-    local type = M._get_selected_type(curr_dir, file_list)
     local command = "{open} %f"
-    if config.options.default_actions[type] ~= nil then
-        command = config.options.default_actions[type].command
+    local need_completion = true
+    if config.options.action_function ~= nil then
+        local ok, action_function_command, func_need_completion = pcall(config.options.action_function, file_list,
+            curr_dir)
+        if ok and action_function_command ~= nil then
+            command = action_function_command
+            need_completion = func_need_completion
+        else
+            local type = M._get_selected_type(curr_dir, file_list)
+            if config.options.default_actions[type] ~= nil then
+                command = config.options.default_actions[type].command
+            end
+            need_completion = true
+        end
     end
+
 
     local prompt = "[Run (Default: " .. command .. ") on " .. table.concat(file_list, ", ") .. "]: "
 
     local input = vim.fn.input(prompt)
     if not input or string.len(input) == 0 then
         input = command
+    else
+        need_completion = true --TODO:pass in commands that don't need completion (`make`)
     end
 
-    input = M._fill_input(input, curr_dir, file_list)
+    if need_completion then
+        input = M._fill_input(input, curr_dir, file_list)
+    end
     input = input:gsub("%s+", " ")
 
     local execute = true
@@ -258,3 +274,4 @@ return M
 --TODO:Multiple RunFile at same time?
 --TODO:command chaining? &&
 --TODO:Ctrl-C
+--TODO:just use list of functions instead of default_actions

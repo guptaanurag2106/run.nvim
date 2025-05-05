@@ -18,6 +18,10 @@ local defaults = {
             command = "python %d" .. utils.path_separator .. "%f",
             description = "Run python files (with default python interpreter)"
         },
+        [".lua"] = {
+            command = "luajit %d" .. utils.path_separator .. "%f",
+            description = "Run lua files via luajit"
+        },
         [".bash"] = {
             command = "bash %d" .. utils.path_separator .. "%f",
             description = "Run bash files"
@@ -115,7 +119,10 @@ local defaults = {
             command = "{open} %d" .. utils.path_separator .. "%f",
             description = "Opens PDF file in default viewer"
         }
-    }
+    },
+    action_function = function(file_list, curr_dir)
+        return nil, false
+    end
 }
 
 M.setup = function(opts)

@@ -4,13 +4,13 @@
 ==============================================================================
 CONTENTS                                                          *run-contents*
 
-    1. Introduction .......... |run-introduction|
-    2. Requirements .......... |run-requirements|
-    3. Setup ................. |run-setup|
-    4. Commands .............. |run-commands|
-    5. Functions ............. |run-functions|
-    6. Configuration ......... |run-configuration|
-    7. Path Placeholders ..... |run-placeholders|
+    1. Introduction ............ |run-introduction|
+    2. Requirements ............ |run-requirements|
+    3. Setup ................... |run-setup|
+    4. Commands ................ |run-commands|
+    5. Functions ............... |run-functions|
+    6. Configuration ........... |run-configuration|
+    7. Path Placeholders ....... |run-placeholders|
     8. File Browser Integrations |run-browsers|
 
 ==============================================================================
@@ -46,7 +46,12 @@ Example configuration with default values:
         },
         default_actions = {
             -- ... see detailed default actions below
-        }
+        },
+        action_function = function(file_list, curr_dir)
+            if #file_list == 1 and file_list[1] == "Makefile" then
+                return "make -B", false
+            end
+        end
     })
 <
 
@@ -150,6 +155,18 @@ Example configuration with default values:
         description = "Runs the file (only one) if it is executable"
     }
 <
+*action_function*             Function
+    Custom function to map selected list of files to a command
+    Example:
+>lua
+    action_function = function(file_list, curr_dir)
+        if #file_list == 1 and file_list[1] == "Makefile" then
+            return "make -B", false --false signifies the command is complete
+                                 --and needs no filling (%f, %d etc.)
+        end
+    end
+<
+
 ==============================================================================
 7. PATH PLACEHOLDERS                                          *run-placeholders*
 
