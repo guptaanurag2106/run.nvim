@@ -121,7 +121,9 @@ local defaults = {
         }
     },
     action_function = function(file_list, curr_dir)
-        return nil, false
+        if #file_list == 1 and file_list[1] == "Makefile" then
+            return "make -B", false
+        end
     end
 }
 

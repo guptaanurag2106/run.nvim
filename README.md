@@ -131,13 +131,17 @@ Run.nvim works with [oil.nvim](https://github.com/stevearc/oil.nvim) by default,
 
 ```lua
 -- Example: Integration with nvim-tree
-require("run").register("nvim-tree", "get_current_files", function()
+require("run").register("nvim-tree", "get_current_files", function(range, bufnr)
+  -- range is a table {line1: int, line2:int} representing range of selected text
+  -- range[line1]=range[line2]=current line if user in normal/insert mode
+  -- bufnr is the buffer number of the file browser
   -- Return list of selected file names in nvim-tree
   -- Implementation depends on nvim-tree API
   return {"file1.txt", "file2.py"}
 end)
 
-require("run").register("nvim-tree", "get_current_dir", function()
+require("run").register("nvim-tree", "get_current_dir", function(bufnr)
+  -- bufnr is the buffer number of the file browser
   -- Return current directory path in nvim-tree
   return "/path/to/directory"
 end)

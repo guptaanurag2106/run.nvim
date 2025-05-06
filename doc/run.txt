@@ -34,12 +34,13 @@ Example configuration with default values:
 >lua
     require("run").setup({
         current_browser = "oil",
-        ask_confirmation = false,
-        open_cmd = nil, -- auto-detected based on OS
-        populate_qflist_sync = false,
-        populate_qflist_async = true,
-        open_qflist_sync = false,
-        open_qflist_async = false,
+        ask_confirmation = false, -- ask confirmation before running the command
+        open_cmd = nil, -- auto-detected based on OS (example xdg-open for
+                        -- linux, open for macos)
+        populate_qflist_sync = false, --populate quickfix list for sync commands
+        populate_qflist_async = true, --populate quickfix list for async commands
+        open_qflist_sync = false, --open qflist after finishing (for sync)
+        open_qflist_async = false, --open qflist after finishing (for async)
         history = {
             enable = true,
             history_file = vim.fn.stdpath("cache") .. "/run.nvim.hist"
@@ -84,19 +85,8 @@ Example configuration with default values:
         {browser_name}  Name of the browser (string)
         {func_name}     Either "get_current_files" or "get_current_dir" (string)
         {func}          The implementation function
+    For more info see |run-browsers|
 
-    Example: >lua
-        -- Register functions for nerdtree browser
-        require("run").register("nerdtree", "get_current_dir", function()
-            -- Return current directory in nerdtree
-            return "/path/to/directory"
-        end)
-
-        require("run").register("nerdtree", "get_current_files", function()
-            -- Return list of selected files in nerdtree
-            return {"file1.txt", "file2.py"}
-        end)
-<
 
 *run.set_current_browser()*                            *run.set_current_browser()*
     Set the current file browser to use with Run.nvim.
@@ -104,7 +94,7 @@ Example configuration with default values:
         {browser_name}  Name of the browser to use (string)
 
     Example: >lua
-        require("run").set_current_browser("nerdtree")
+        require("run").set_current_browser("nvim-tree")
 <
 
 ==============================================================================
@@ -215,21 +205,24 @@ other file browsers by implementing and registering two functions:
 
 Example for integrating with a custom file browser:
 >lua
-    -- Register NERDTree functions
-    require("run").register("nerdtree", "get_current_files", function()
-        -- Implementation to get selected files in NERDTree
-        -- Should return a list of filenames (just names, not full paths)
-        return {"file1.txt", "file2.py"}
+    -- Register nvim-tree functions
+    require("run").register("nvim-tree", "get_current_files", function(range, bufnr)
+      -- range is a table {line1: int, line2:int} representing range of selected text
+      -- range[line1]=range[line2]=current line if user in normal/insert mode
+      -- bufnr is the buffer number of the file browser
+      -- Return list of selected file names in nvim-tree
+      -- Implementation depends on nvim-tree API
+      return {"file1.txt", "file2.py"}
     end)
 
-    require("run").register("nerdtree", "get_current_dir", function()
-        -- Implementation to get current directory in NERDTree
-        -- Should return the full directory path
-        return "/path/to/current/directory"
+    require("run").register("nvim-tree", "get_current_dir", function(bufnr)
+      -- bufnr is the buffer number of the file browser
+      -- Return current directory path in nvim-tree
+      return "/path/to/directory"
     end)
 
-    -- Set NERDTree as the current browser
-    require("run").set_current_browser("nerdtree")
+    -- Set nvim-tree as the current browser
+    require("run").set_current_browser("nvim-tree")
 <
 
 ==============================================================================

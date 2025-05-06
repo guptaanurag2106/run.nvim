@@ -263,15 +263,16 @@ end
 ---The functions should be implemented first. See `register(browser_name, func_name, func)`
 ---@param browser_name string The name of the browser you want to set as current
 M.set_current_browser = function(browser_name)
-    _browsers.set_current_browser(browser_name)
+    _browsers.set_current_browser(string.lower(browser_name))
 end
 
 return M
 
---TODO:multiple action per file (options)
---TODO:history
 --TODO:quickfile??
+--TODO:Ctrl-C
 --TODO:Multiple RunFile at same time?
 --TODO:command chaining? &&
---TODO:Ctrl-C
 --TODO:just use list of functions instead of default_actions
+--TODO:per project settings
+--TODO:multiple action per file (options)
+--TODO:history
