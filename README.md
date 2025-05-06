@@ -91,6 +91,10 @@ vim.keymap.set("n", "<leader>rf", "<CMD>RunFileAsync<CR>", { desc = "(Run.nvim) 
     * Easily configure your own commands using placeholders, making repetitive tasks faster and error-free.
 - Flexible Execution:
     * Choose to run commands synchronously, asynchronously and populate the qflist with the output
+- Output Window
+    * Unbuffered output of asynchronous commands can be seen in a new popup window which opens at the bottom
+    * It support `q` to close and `<C-c>` to stop command execution
+    * The buffer is reused if multiple `:RunAsync` are started 
 
 ## Configuration
 
