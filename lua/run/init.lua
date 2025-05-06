@@ -266,10 +266,13 @@ M.set_current_browser = function(browser_name)
     _browsers.set_current_browser(string.lower(browser_name))
 end
 
+M._stop_job = function(job_id)
+    run.stop_job(job_id)
+end
+
 return M
 
 --TODO:quickfile??
---TODO:Ctrl-C
 --TODO:Multiple RunFile at same time?
 --TODO:command chaining? &&
 --TODO:just use list of functions instead of default_actions

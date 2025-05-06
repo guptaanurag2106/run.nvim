@@ -17,7 +17,6 @@ populate_qflist_async	run.txt	/*populate_qflist_async*
 populate_qflist_sync	run.txt	/*populate_qflist_sync*
 run	run.txt	/*run*
 run-browsers	run.txt	/*run-browsers*
-run-browsers	run.txt	/*run-browsers*
 run-commands	run.txt	/*run-commands*
 run-configuration	run.txt	/*run-configuration*
 run-contents	run.txt	/*run-contents*

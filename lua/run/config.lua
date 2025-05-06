@@ -138,9 +138,6 @@ M.setup = function(opts)
     if not M.options.populate_qflist_sync then
         M.options.open_qflist_sync = false
     end
-    if not M.options.open_cmd then
-        M.options.open_cmd = utils.get_open_command()
-    end
 end
 
 return M

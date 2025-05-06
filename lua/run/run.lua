@@ -111,7 +111,6 @@ local create_reuse_win = function(window_name)
 end
 
 M.run_term = function(cmd, populate_qflist, open_qflist)
-    print(cmd)
     local buf, win = create_reuse_win("run://Command Output")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
@@ -125,13 +124,15 @@ M.run_term = function(cmd, populate_qflist, open_qflist)
     vim.api.nvim_buf_add_highlight(buf, -1, 'Title', 0, 0, -1)
     vim.api.nvim_buf_add_highlight(buf, -1, 'Special', 1, 0, -1)
 
+    local job_id
+
     vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':q<CR>', {
         noremap = true,
         silent = true
     })
     local qf_list = {}
 
-    local _ = vim.fn.jobstart(cmd, {
+    job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data)
             if data and #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
                 vim.schedule(function()
@@ -198,9 +199,19 @@ M.run_term = function(cmd, populate_qflist, open_qflist)
         stdout_buffered = false,
         stderr_buffered = false
     })
+    vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':lua require("run")._stop_job(' .. job_id .. ')<CR>', {
+        noremap = true,
+        silent = true
+    })
 
 
     -- vim.cmd('wincmd p') -- Focus on the previous window
+end
+
+M.stop_job = function(job_id)
+    if job_id then
+        vim.fn.jobstop(job_id)
+    end
 end
 
 return M
