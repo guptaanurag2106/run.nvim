@@ -208,7 +208,7 @@ Example for integrating with a custom file browser:
     -- Register nvim-tree functions
     require("run").register("nvim-tree", "get_current_files", function(range, bufnr)
       -- range is a table {line1: int, line2:int} representing range of selected text
-      -- range[line1]=range[line2]=current line if user in normal/insert mode
+      -- range[line1]=range[line2]=current line if user in normal mode
       -- bufnr is the buffer number of the file browser
       -- Return list of selected file names in nvim-tree
       -- Implementation depends on nvim-tree API

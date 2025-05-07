@@ -124,6 +124,7 @@ local defaults = {
         if #file_list == 1 and file_list[1] == "Makefile" then
             return "make -B", false
         end
+        return nil, false
     end
 }
 

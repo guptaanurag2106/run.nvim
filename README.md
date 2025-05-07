@@ -79,7 +79,7 @@ use {
 The plugin creates two user commands `RunFile`, `RunFileAsync`. No keymaps are however
 created and it's left to the user. An example keymap could be as simple as
 ```lua
-vim.keymap.set("n", "<leader>rf", "<CMD>RunFileAsync<CR>", { desc = "(Run.nvim) Async" })
+vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFileAsync<CR>", { desc = "(Run.nvim) Async" })
 ```
 
 ## Features
@@ -137,7 +137,7 @@ Run.nvim works with [oil.nvim](https://github.com/stevearc/oil.nvim) by default,
 -- Example: Integration with nvim-tree
 require("run").register("nvim-tree", "get_current_files", function(range, bufnr)
   -- range is a table {line1: int, line2:int} representing range of selected text
-  -- range[line1]=range[line2]=current line if user in normal/insert mode
+  -- range[line1]=range[line2]=current line if user in normal mode
   -- bufnr is the buffer number of the file browser
   -- Return list of selected file names in nvim-tree
   -- Implementation depends on nvim-tree API
