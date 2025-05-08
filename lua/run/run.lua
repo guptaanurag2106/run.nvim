@@ -1,10 +1,14 @@
 local utils = require("run.utils")
 local M = {}
 
-M.run_sync_new = function(cmd, populate_qflist, open_qflist)
+M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     cmd = utils.split(cmd, " ")
     -- Using newer vim.system API (Neovim 0.10+)
-    local result = vim.system(cmd):wait()
+    local opts = {
+        detach = false,
+        cwd = curr_dir
+    }
+    local result = vim.system(cmd, opts):wait()
 
     -- Handle results
     vim.notify(result.stdout, vim.log.levels.INFO)
@@ -22,47 +26,6 @@ M.run_sync_new = function(cmd, populate_qflist, open_qflist)
     if open_qflist then
         vim.cmd('copen')
     end
-end
-
-M.run_async = function(cmd)
-    cmd = utils.split(cmd, " ")
-
-    -- Using vim.fn.jobstart
-    local stdout = {}
-    local stderr = {}
-
-    local job_id = vim.fn.jobstart(cmd, {
-        on_stdout = function(_, data, _)
-            for _, line in ipairs(data) do
-                table.insert(stdout, line)
-            end
-        end,
-        on_stderr = function(_, data, _)
-            for _, line in ipairs(data) do
-                table.insert(stderr, line)
-            end
-        end,
-        on_exit = function(_, exit_code, _)
-            if #stdout > 0 then
-                vim.notify(table.concat(stdout, "\n"), vim.log.levels.INFO)
-            end
-            if #stderr > 0 then
-                vim.notify(table.concat(stderr, "\n"), vim.log.levels.ERROR)
-            end
-            if exit_code == 0 then
-                vim.schedule(function()
-                    vim.notify("\nStatus: Completed Successfully (exit code 0)", vim.log.levels.INFO)
-                end)
-            else
-                vim.schedule(function()
-                    vim.notify("\nStatus: Completed Successfully (exit code " .. exit_code .. ")",
-                        vim.log.levels.ERROR)
-                end)
-            end
-        end
-    })
-
-    return job_id
 end
 
 M.run_async_new = function(cmd)
@@ -110,7 +73,7 @@ local create_reuse_win = function(window_name)
     return buf, win
 end
 
-M.run_term = function(cmd, populate_qflist, open_qflist)
+M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     local buf, win = create_reuse_win("run://Command Output")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
@@ -133,6 +96,8 @@ M.run_term = function(cmd, populate_qflist, open_qflist)
     local qf_list = {}
 
     job_id = vim.fn.jobstart(cmd, {
+        cwd = curr_dir,
+        detach = false,
         on_stdout = function(_, data)
             if data and #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
                 vim.schedule(function()

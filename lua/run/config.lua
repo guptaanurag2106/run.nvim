@@ -3,8 +3,8 @@ local M = {}
 
 local defaults = {
     current_browser = "oil",
-    ask_confirmation = false,
-    open_cmd = nil,
+    ask_confirmation = true,
+    open_cmd = utils.get_open_command(),
     populate_qflist_sync = false,
     populate_qflist_async = true,
     open_qflist_sync = false,
@@ -15,108 +15,107 @@ local defaults = {
     },
     default_actions = {
         [".py"] = {
-            command = "python %d" .. utils.path_separator .. "%f",
+            command = "python %f",
             description = "Run python files (with default python interpreter)"
         },
         [".lua"] = {
-            command = "luajit %d" .. utils.path_separator .. "%f",
+            command = "luajit %f",
             description = "Run lua files via luajit"
         },
         [".bash"] = {
-            command = "bash %d" .. utils.path_separator .. "%f",
+            command = "bash %f",
             description = "Run bash files"
         },
         [".sh"] = {
-            command = "sh %d" .. utils.path_separator .. "%f",
+            command = "sh %f",
             description = "Run shell files"
         },
-        [".tar.gz"] = {
-            command = "tar xzvf %d" .. utils.path_separator .. "%f -C %d",
+        [".tar.gz"] = { --change
+            command = "tar xzvf %1 -C %d",
             description = "Extracts archive file"
         },
         [".exe"] = {
-            command = "%d" .. utils.path_separator .. "%1",
+            command = "%1",
             description = "Runs the file (windows exec)"
         },
         ["exe"] = {
-            command = "%d" .. utils.path_separator .. "%1",
+            command = "%1",
             description = "Runs the file (only one) if it is executable"
         },
         ["no_extension"] = {
-            command = "chmod +x %d" .. utils.path_separator .. "%f",
+            command = "chmod +x %f",
             description = "chmod +x on the file (if no extension and not executable)"
         },
         ["dir"] = {
-            command = "tar czvf %d" .. utils.path_separator .. "%1.tar.gz -C %d %f",
+            command = "tar czvf %1.tar.gz -C %d %f",
             description = "tar.gz on the folder or multiple folders"
         },
         ["multiple"] = {
-            command = "tar czvf %d" .. utils.path_separator .. "%1.tar.gz -C %d %f",
+            command = "tar czvf %1.tar.gz -C %d %f",
             description = "tar.gz all the files/folders (if mixture of file/folder types)"
         },
         ["default"] = {
-            command = "{open} %d" .. utils.path_separator .. "%f",
+            command = "{open} %f",
             description = "Open file with system default application"
         },
         [".jar"] = {
-            command = "java -jar %d" .. utils.path_separator .. "%f",
+            command = "java -jar %f",
             description = "Runs Java JAR file"
         },
         [".js"] = {
-            command = "node %d" .. utils.path_separator .. "%f",
+            command = "node %f",
             description = "Runs JavaScript file with Node.js"
         },
         [".ts"] = {
-            command = "ts-node %d" .. utils.path_separator .. "%f",
+            command = "ts-node %f",
             description = "Runs TypeScript file with ts-node"
         },
         [".go"] = {
-            command = "go run %d" .. utils.path_separator .. "%f",
+            command = "go run %f",
             description = "Runs Go file"
         },
         [".c"] = {
             command = "gcc %d" ..
                 utils.path_separator ..
-                "%f -o %d" .. utils.path_separator .. "a.out",
+                "%f -o a.out",
             description = "Compiles and runs C file"
         },
         [".cpp"] = {
             command = "g++ %d" ..
                 utils.path_separator ..
-                "%f -o %d" .. utils.path_separator .. "a.out",
+                "%f -o a.out",
             description = "Compiles and runs C++ file"
         },
         [".java"] = {
-            command = "javac %d" .. utils.path_separator .. "%f && java -cp %d %1",
+            command = "javac %f && java -cp %d %1",
             description = "Compiles and runs Java file"
         },
         [".md"] = {
-            command = "pandoc %d" ..
-                utils.path_separator .. "%f -o %1.html",
+            command = "pandoc %f -o %1.html",
             description = "Converts Markdown to HTML and opens it"
         },
         [".json"] = {
-            command = "jq . %d" .. utils.path_separator .. "%f | less",
+            command = "jq . %f",
             description = "Pretty-prints JSON file"
         },
         [".csv"] = {
-            command = "column -t -s, %d" .. utils.path_separator .. "%f | less",
+            command = "column -t -s, %f",
             description = "Displays CSV file in columns"
         },
         [".mp4"] = {
-            command = "vlc %d" .. utils.path_separator .. "%f",
+            command = "vlc %f",
             description = "Plays video file with VLC"
         },
         [".mp3"] = {
-            command = "vlc %d" .. utils.path_separator .. "%f",
+            command = "vlc %f",
             description = "Plays audio file with vlc"
         },
         [".html"] = {
-            command = "{open} %d" .. utils.path_separator .. "%f",
+            command = "{open} %f",
             description = "Opens HTML file in default browser"
         },
         [".pdf"] = {
-            command = "{open} %d" .. utils.path_separator .. "%f",
+            command = "{open} %f",
             description = "Opens PDF file in default viewer"
         }
     },

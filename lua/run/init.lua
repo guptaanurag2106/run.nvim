@@ -105,12 +105,66 @@ M.runfile = function(range, async)
 
     -- Run `input`
     if async then
-        run.run_term(input, config.options.populate_qflist_async, config.options.open_qflist_async)
+        run.run_async(input, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
     else
         print("\n")
-        run.run_sync_new(input, config.options.populate_qflist_sync, config.options.open_qflist_sync)
+        run.run_sync(input, curr_dir, config.options.populate_qflist_sync, config.options.open_qflist_sync)
     end
 end
+
+
+---Returns type for the file list. See `config.options.default_actions` for all possible types
+---@param curr_dir string
+---@param file_list table
+---@return string
+M._get_selected_type = function(curr_dir, file_list)
+    if file_list == nil then
+        return "default"
+    end
+    local type = nil
+
+    for _, file in pairs(file_list) do
+        file = utils.path_join(curr_dir, file)
+        local type1 = nil
+        for ext, _ in pairs(config.options.default_actions) do
+            if ext:sub(1, 1) == "." and utils.ends_with(file, ext) then
+                type1 = ext
+                break
+            end
+        end
+
+        if type1 == nil then
+            --TODO: check for no_extension
+            local stat = uv.fs_stat(file)
+            if stat then
+                if stat.type == "directory" then
+                    type1 = "dir"
+                elseif stat.type == "file" and vim.fn.executable(file) == 1 then --TODO:check stat.mode bitwise?? cross platform??
+                    type1 = "exe"
+                else
+                    type1 = "default"
+                end
+            else
+                type1 = "default"
+            end
+        end
+
+        if type ~= nil then
+            if type ~= type1 then
+                type = "multiple"
+                break
+            end
+        else
+            type = type1
+        end
+    end
+
+    if type == nil then
+        type = "default"
+    end
+    return type
+end
+
 
 ---Fill values for `%f`, `%1`, `%d`
 ---If you want to use %.. for some other purpose escape `%` with `%%`. All `%%` will be replaced by `%`
@@ -183,58 +237,6 @@ M._fill_input = function(input, curr_dir, file_list)
 end
 
 
----Returns type for the file list. See `config.options.default_actions` for all possible types
----@param curr_dir string
----@param file_list table
----@return string
-M._get_selected_type = function(curr_dir, file_list)
-    if file_list == nil then
-        return "default"
-    end
-    local type = nil
-
-    for _, file in pairs(file_list) do
-        file = utils.path_join(curr_dir, file)
-        local type1 = nil
-        for ext, _ in pairs(config.options.default_actions) do
-            if ext:sub(1, 1) == "." and utils.ends_with(file, ext) then
-                type1 = ext
-                break
-            end
-        end
-
-        if type1 == nil then
-            --TODO: check for no_extension
-            local stat = uv.fs_stat(file)
-            if stat then
-                if stat.type == "directory" then
-                    type1 = "dir"
-                elseif stat.type == "file" and vim.fn.executable(file) == 1 then --TODO:check stat.mode bitwise?? cross platform??
-                    type1 = "exe"
-                else
-                    type1 = "default"
-                end
-            else
-                type1 = "default"
-            end
-        end
-
-        if type ~= nil then
-            if type ~= type1 then
-                type = "multiple"
-                break
-            end
-        else
-            type = type1
-        end
-    end
-
-    if type == nil then
-        type = "default"
-    end
-    return type
-end
-
 ---Get names of selected file
 ---For the path also user get_current_dir
 ---@param range table Range of selection (from user_command `command` params)
@@ -272,10 +274,16 @@ end
 
 return M
 
+--TODO:jobs return value (valid command etc.)
+--TODO:stdin
 --TODO:quickfile??
+--TODO:closing buffer while the program is running
+--TODO:Weird escape behaviour on first Run (Default:...) Prompt
+--TODO:no need for fill input
 --TODO:Multiple RunFile at same time?
 --TODO:command chaining? &&
---TODO:just use list of functions instead of default_actions
+--TODO:just use table of functions instead of default_actions
 --TODO:per project settings
---TODO:multiple action per file (options)
 --TODO:history
+--TODO:multiple action per file (options)
+--TODO:passing keys (commands like "less")
