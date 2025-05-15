@@ -90,13 +90,13 @@ vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFileAsync<CR>", { desc = "(Run.n
 - Predefined Commands:
     * Offers a set of ready-to-use commands like tar extraction, chmod +x, xdg-open, and more.
 - Custom Actions:
-    * Easily configure your own commands using placeholders, making repetitive tasks faster and error-free.
+    * The plugin suggests a default command, you can change it by typing your own command (after the `[Run (Default: <cmd>) on <file>]:` and making use of ([Command Placeholders](#command-placeholders)).
 - Flexible Execution:
     * Choose to run commands synchronously, asynchronously and populate the qflist with the output
 - Output Window
     * Unbuffered output of asynchronous commands can be seen in a new popup window which opens at the bottom
     * It support `q` to close and `<C-c>` to stop command execution
-    * The buffer is reused if multiple `:RunAsync` are started 
+    * The buffer is reused if multiple `:RunAsync` are started
 
 ## Configuration
 
