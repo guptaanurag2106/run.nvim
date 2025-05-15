@@ -80,19 +80,15 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         "Running: " .. vim.inspect(cmd),
         "",
         "Output",
-        "--------------------------------------------------------------------------------",
         "",
+        "--------------------------------------------------------------------------------",
     })
 
     vim.api.nvim_buf_add_highlight(buf, -1, 'Title', 0, 0, -1)
-    vim.api.nvim_buf_add_highlight(buf, -1, 'Special', 1, 0, -1)
+    vim.api.nvim_buf_add_highlight(buf, -1, 'Special', 2, 0, -1)
 
     local job_id
 
-    vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':q<CR>', {
-        noremap = true,
-        silent = true
-    })
     local qf_list = {}
 
     job_id = vim.fn.jobstart(cmd, {
@@ -164,13 +160,16 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         stdout_buffered = false,
         stderr_buffered = false
     })
+
+    vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':lua require("run")._stop_job(' .. job_id .. ') vim.cmd("q")<CR>', {
+        noremap = true,
+        silent = true
+    })
     vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':lua require("run")._stop_job(' .. job_id .. ')<CR>', {
         noremap = true,
         silent = true
     })
 
-
-    -- vim.cmd('wincmd p') -- Focus on the previous window
 end
 
 M.stop_job = function(job_id)

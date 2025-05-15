@@ -2,7 +2,6 @@ local _browsers = require("run.browsers")
 local config    = require("run.config")
 local utils     = require("run.utils")
 local run       = require("run.run")
-local uv        = vim.uv
 
 local M         = {}
 
@@ -113,6 +112,9 @@ M.runfile = function(range, async)
 end
 
 
+--------------------------------------------------------
+---HELPER FUNCTIONS
+--------------------------------------------------------
 ---Returns type for the file list. See `config.options.default_actions` for all possible types
 ---@param curr_dir string
 ---@param file_list table
@@ -124,29 +126,30 @@ M._get_selected_type = function(curr_dir, file_list)
     local type = nil
 
     for _, file in pairs(file_list) do
-        file = utils.path_join(curr_dir, file)
         local type1 = nil
-        for ext, _ in pairs(config.options.default_actions) do
-            if ext:sub(1, 1) == "." and utils.ends_with(file, ext) then
-                type1 = ext
-                break
+        local extension = utils.get_file_extension(file)
+        if extension == nil then
+            type1 = "no_extension"
+        else
+            for ext, _ in pairs(config.options.default_actions) do
+                if ext:sub(1, 1) == "." and utils.ends_with(file, ext) then
+                    type1 = ext
+                    break
+                end
+            end
+        end
+
+        local stat = vim.uv.fs_stat(utils.path_join(curr_dir, file))
+        if stat then
+            if stat.type == "directory" then
+                type1 = "dir"
+            elseif stat.type == "file" and vim.fn.executable(utils.path_join(curr_dir, file)) == 1 then --TODO:check stat.mode bitwise?? cross platform??
+                type1 = "exe"
             end
         end
 
         if type1 == nil then
-            --TODO: check for no_extension
-            local stat = uv.fs_stat(file)
-            if stat then
-                if stat.type == "directory" then
-                    type1 = "dir"
-                elseif stat.type == "file" and vim.fn.executable(file) == 1 then --TODO:check stat.mode bitwise?? cross platform??
-                    type1 = "exe"
-                else
-                    type1 = "default"
-                end
-            else
-                type1 = "default"
-            end
+            type1 = "default"
         end
 
         if type ~= nil then
@@ -236,21 +239,21 @@ M._fill_input = function(input, curr_dir, file_list)
     return result
 end
 
-
----Get names of selected file
----For the path also user get_current_dir
----@param range table Range of selection (from user_command `command` params)
----@param bufnr integer bufnr of the open browser
----@return table|nil Path of the selected file
-M._get_current_files = function(range, bufnr)
-    return _browsers.get_current_files(range, bufnr)
+--TODO:Add to doc
+---Checks if a str ends with a suffix or not (useful for file extensions)
+---@param str any
+---@param suffix any
+---@return boolean true if str ends with suffix
+M.ends_with = function(str, suffix)
+    return utils.ends_with(str, suffix)
 end
 
----Get path of open folder in browser
----@param bufnr integer bufnr of the open browser
----@return string|nil Path of the open folder
-M._get_current_dir = function(bufnr)
-    return _browsers.get_current_dir(bufnr)
+---Split string into a table of strings using a separator.
+---@param inputString string The string to split.
+---@param sep string The separator to use.
+---@return table table A table of strings.
+M.split = function(inputString, sep)
+    return utils.split(inputString, sep)
 end
 
 ---Register get_current_files, get_current_dir functions for a browser
@@ -268,6 +271,27 @@ M.set_current_browser = function(browser_name)
     _browsers.set_current_browser(string.lower(browser_name))
 end
 
+
+--------------------------------------------------------
+---Internal Functions, not needed to be used by the user
+--------------------------------------------------------
+
+---Get names of selected file
+---For the path also user get_current_dir
+---@param range table Range of selection (from user_command `command` params)
+---@param bufnr integer bufnr of the open browser
+---@return table|nil Path of the selected file
+M._get_current_files = function(range, bufnr)
+    return _browsers.get_current_files(range, bufnr)
+end
+
+---Get path of open folder in browser
+---@param bufnr integer bufnr of the open browser
+---@return string|nil Path of the open folder
+M._get_current_dir = function(bufnr)
+    return _browsers.get_current_dir(bufnr)
+end
+
 M._stop_job = function(job_id)
     run.stop_job(job_id)
 end
@@ -282,8 +306,9 @@ return M
 --TODO:no need for fill input
 --TODO:Multiple RunFile at same time?
 --TODO:command chaining? &&
---TODO:just use table of functions instead of default_actions
+--TODO:just use table of functions instead of default_actions (slow??)
 --TODO:per project settings
 --TODO:history
+--TODO:While prompting user add to command or completely write new??
 --TODO:multiple action per file (options)
 --TODO:passing keys (commands like "less")

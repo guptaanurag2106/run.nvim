@@ -39,7 +39,7 @@ local defaults = {
             description = "Runs the file (windows exec)"
         },
         ["exe"] = {
-            command = "%1",
+            command = "." .. utils.path_separator .. "%1",
             description = "Runs the file (only one) if it is executable"
         },
         ["no_extension"] = {
@@ -120,8 +120,19 @@ local defaults = {
         }
     },
     action_function = function(file_list, curr_dir)
+        -- return <cmd>, <requires completion>
         if #file_list == 1 and file_list[1] == "Makefile" then
             return "make -B", false
+        end
+
+        local is_go_mod = true
+        for _, file in ipairs(file_list) do
+            if file ~= "go.mod" and file ~= "go.sum" then
+                is_go_mod = false
+            end
+        end
+        if is_go_mod then
+            return "go run .", false
         end
         return nil, false
     end

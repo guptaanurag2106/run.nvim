@@ -67,11 +67,13 @@ end
 ---@param filename string: The name of the file (including its extension).
 ---@return string|nil: The file extension, or nil if no extension exists.
 M.get_file_extension = function(filename)
-    if filename and filename:match("^.+%.(.+)$") then
-        return filename:match("^.+%.(.+)$")
-    else
-        return nil
+    if filename then
+        local dot_position = filename:find("%.")
+        if dot_position then
+            return filename:sub(dot_position + 1)
+        end
     end
+    return nil
 end
 
 return M
