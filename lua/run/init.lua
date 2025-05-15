@@ -115,6 +115,7 @@ end
 --------------------------------------------------------
 ---HELPER FUNCTIONS
 --------------------------------------------------------
+
 ---Returns type for the file list. See `config.options.default_actions` for all possible types
 ---@param curr_dir string
 ---@param file_list table
@@ -238,6 +239,11 @@ M._fill_input = function(input, curr_dir, file_list)
 
     return result
 end
+
+
+--------------------------------------------------------
+---Functions for end-user configuration
+--------------------------------------------------------
 
 --TODO:Add to doc
 ---Checks if a str ends with a suffix or not (useful for file extensions)

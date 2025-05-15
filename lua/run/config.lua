@@ -30,7 +30,7 @@ local defaults = {
             command = "sh %f",
             description = "Run shell files"
         },
-        [".tar.gz"] = { --change
+        [".tar.gz"] = {
             command = "tar xzvf %1 -C %d",
             description = "Extracts archive file"
         },

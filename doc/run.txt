@@ -95,7 +95,26 @@ Example configuration with default values:
 
     Example: >lua
         require("run").set_current_browser("nvim-tree")
+
+** Some Helper Functions **
 <
+*run.ends_with()*                                                *run.ends_with()*
+    Check if a string ends with a suffix (useful for checking extensions).
+    Parameters:
+        {str}     Input string
+        {suffix}  Suffix to check against
+
+    Example: >lua
+        require("run").ends_with("file.tar.gz", "tar.gz") -- -> true
+
+*run.split()*                                                        *run.split()*
+    Split a string based on a delimiter. Returns a table
+    Parameters:
+        {str}     Input string
+        {delim}   Delimiter to split the string on 
+
+    Example: >lua
+        require("run").split("ls -la", " ") -- -> {"ls", "-la"}
 
 ==============================================================================
 6. CONFIGURATION                                             *run-configuration*
