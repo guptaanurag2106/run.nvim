@@ -37,10 +37,10 @@ external applications.
 Run.nvim  makes these tasks easier by:
 - Providing sensible default commands based on file types (Not having to remember the exact commands)
 - Executing commands without leaving your editor
-- Handling path construction automatically with a simple placeholder system (Useful for 
-  operating on nested files, w.r.t. the `cwd`)
+- Running commands in the directory open in the browser (irrespective of `cwd`)
 - Displaying command output directly in Neovim in a separate buffer, to easily copy/modify the output
 - Supporting both synchronous and asynchronous execution options
+- Providing placeholder system ([Command Placeholders](#command-placeholders)) for easy typing
 
 The plugin is particularly useful for file browser workflows, where you're already navigating
 your filesystem within Neovim and want to perform operations on the files you're browsing.
