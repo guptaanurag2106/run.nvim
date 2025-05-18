@@ -25,10 +25,14 @@ run-introduction	run.txt	/*run-introduction*
 run-placeholders	run.txt	/*run-placeholders*
 run-requirements	run.txt	/*run-requirements*
 run-setup	run.txt	/*run-setup*
+run.ends_with()	run.txt	/*run.ends_with()*
+run.ends_with()	run.txt	/*run.ends_with()*
 run.nvim	run.txt	/*run.nvim*
 run.register()	run.txt	/*run.register()*
 run.register()	run.txt	/*run.register()*
 run.set_current_browser()	run.txt	/*run.set_current_browser()*
 run.set_current_browser()	run.txt	/*run.set_current_browser()*
 run.setup()	run.txt	/*run.setup()*
+run.split()	run.txt	/*run.split()*
+run.split()	run.txt	/*run.split()*
 {open}	run.txt	/*{open}*

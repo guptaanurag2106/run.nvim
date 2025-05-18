@@ -1,3 +1,4 @@
+local Path      = require("plenary.path")
 local _browsers = require("run.browsers")
 local config    = require("run.config")
 local utils     = require("run.utils")
@@ -47,42 +48,59 @@ M.runfile = function(range, async)
         return
     end
 
-    local command = "{open} %f"
+    local default_command = "{open} %f"
     local need_completion = true
     if config.options.action_function ~= nil then
         local ok, action_function_command, func_need_completion = pcall(config.options.action_function, file_list,
             curr_dir)
         if ok and action_function_command ~= nil then
-            command = action_function_command
+            default_command = action_function_command
             need_completion = func_need_completion
         else
             local type = M._get_selected_type(curr_dir, file_list)
             if config.options.default_actions[type] ~= nil then
-                command = config.options.default_actions[type].command
+                default_command = config.options.default_actions[type].command
             end
             need_completion = true
         end
     end
 
+    local suggestion_hist = ""
+    local history = {}
 
-    local prompt = "[Run (Default: " .. command .. ") on " .. table.concat(file_list, ", ") .. "]: "
+    if config.options.history ~= nil and config.options.history.enable then
+        ok, suggestion_hist, history = pcall(M._get, default_command, config.options.history.history_file)
+        if ok then
+            if not suggestion_hist then
+                suggestion_hist = ""
+            end
+        else
+            suggestion_hist = ""
+            history = {}
+        end
+    end
 
-    local input = vim.fn.input(prompt)
+
+    local prompt = "[Run (Default: " .. default_command .. ") on " .. table.concat(file_list, ", ") .. "]: "
+
+    local input = vim.fn.input(prompt, suggestion_hist)
+    local command = ""
     if not input or string.len(input) == 0 then
-        input = command
+        command = default_command
     else
+        command = input
         need_completion = true --TODO:pass in commands that don't need completion (`make`)
     end
 
     if need_completion then
-        input = M._fill_input(input, curr_dir, file_list)
+        command = M._fill_input(command, curr_dir, file_list)
     end
-    input = input:gsub("%s+", " ")
+    command = command:gsub("%s+", " ")
 
     local execute = true
     if config.options.ask_confirmation then
         while true do
-            local message = ("Run [" .. input .. "] (Y/n): ")
+            local message = ("Run [" .. command .. "] (Y/n): ")
             execute = vim.fn.input(message)
 
             if execute:lower() == "y" or execute:lower() == "Y" or string.len(execute) == 0 then
@@ -102,12 +120,18 @@ M.runfile = function(range, async)
         return
     end
 
+    if config.options.history ~= nil and config.options.history.enable then
+        if default_command ~= input then
+            M._save(default_command, input, config.options.history.history_file, history) -- Key is command (deterministic) and user choice is input (from prompt)
+        end
+    end
+
     -- Run `input`
     if async then
-        run.run_async(input, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
+        run.run_async(command, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
     else
         print("\n")
-        run.run_sync(input, curr_dir, config.options.populate_qflist_sync, config.options.open_qflist_sync)
+        run.run_sync(command, curr_dir, config.options.populate_qflist_sync, config.options.open_qflist_sync)
     end
 end
 
@@ -241,25 +265,44 @@ M._fill_input = function(input, curr_dir, file_list)
 end
 
 
+---get last user prompt for given command
+---@param key string the command determined from default_actions
+---@param path string the history file path
+---@return string, table
+M._get = function(key, path)
+    local history = vim.json.decode(Path:new(path):read())
+    return history[key], history
+end
+
+---save user prompt for given command
+---@param key string the command determined from default_actions
+---@param value string user command for the given prompt
+---@param path string the history file path
+---@param history table the old history, (_save will modify it)
+---@return nil
+M._save = function(key, value, path, history)
+    history[key] = value
+    Path:new(path):write(vim.fn.json_encode(history), "w")
+end
+
 --------------------------------------------------------
 ---Functions for end-user configuration
 --------------------------------------------------------
 
---TODO:Add to doc
 ---Checks if a str ends with a suffix or not (useful for file extensions)
----@param str any
----@param suffix any
+---@param str string
+---@param suffix string
 ---@return boolean true if str ends with suffix
 M.ends_with = function(str, suffix)
     return utils.ends_with(str, suffix)
 end
 
 ---Split string into a table of strings using a separator.
----@param inputString string The string to split.
+---@param str string The string to split.
 ---@param sep string The separator to use.
 ---@return table table A table of strings.
-M.split = function(inputString, sep)
-    return utils.split(inputString, sep)
+M.split = function(str, sep)
+    return utils.split(str, sep)
 end
 
 ---Register get_current_files, get_current_dir functions for a browser
@@ -313,7 +356,6 @@ return M
 --TODO:Multiple RunFile at same time?
 --TODO:command chaining? &&
 --TODO:just use table of functions instead of default_actions (slow??)
---TODO:per project settings
 --TODO:history
 --TODO:While prompting user add to command or completely write new??
 --TODO:multiple action per file (options)

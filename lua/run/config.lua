@@ -11,7 +11,7 @@ local defaults = {
     open_qflist_async = false,
     history = {
         enable = true,
-        history_file = vim.fn.stdpath("cache") .. utils.path_separator .. "run.nvim.hist"
+        history_file = vim.fn.stdpath("data") .. utils.path_separator .. "run.nvim.json"
     },
     default_actions = {
         [".py"] = {
@@ -75,15 +75,11 @@ local defaults = {
             description = "Runs Go file"
         },
         [".c"] = {
-            command = "gcc %d" ..
-                utils.path_separator ..
-                "%f -o a.out",
+            command = "gcc %f -o a.out",
             description = "Compiles and runs C file"
         },
         [".cpp"] = {
-            command = "g++ %d" ..
-                utils.path_separator ..
-                "%f -o a.out",
+            command = "g++ %f -o a.out",
             description = "Compiles and runs C++ file"
         },
         [".java"] = {
@@ -120,7 +116,7 @@ local defaults = {
         }
     },
     action_function = function(file_list, curr_dir)
-        -- return <cmd>, <requires completion>
+        -- return <cmd>, <requires_completion>
         if #file_list == 1 and file_list[1] == "Makefile" then
             return "make -B", false
         end
