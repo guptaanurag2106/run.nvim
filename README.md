@@ -112,6 +112,9 @@ require("run").setup({
   -- Ask for confirmation before executing commands
   ask_confirmation = false,
   
+  -- open_cmd, default is xdg-open for linux, open for macos, start in windows
+  open_cmd = 'xdg-open'
+  
   -- Auto-populate quickfix list with command output for sync commands
   populate_qflist_sync = false,
   -- Auto-populate quickfix list with command output for async commands
@@ -210,7 +213,7 @@ Run.nvim comes with sensible defaults for common file types:
     * *multiple*: When a combination of different file/folder types is selected, 
         the suggestion is to create a `.tar.gz`
     * *default*: When none of the above categories can be inferred, the default suggestion
-        is to open it (`open` is macos, `xdg-open` in linux, this can be customized in `setup` function)
+        is to open it (`open` in macos, `xdg-open` in linux, `start` for windows this can be customized in `setup` function)
 
 You can override any of these or add your own in the configuration.
 

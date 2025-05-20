@@ -67,6 +67,17 @@ local create_reuse_win = function(window_name)
     vim.bo[buf].swapfile = false
     vim.api.nvim_buf_set_name(buf, window_name)
 
+    local group = vim.api.nvim_create_augroup("RunNvim_BufferCloseHandler", { clear = true })
+
+    -- Set up an autocommand for the BufDelete event
+    vim.api.nvim_create_autocmd("BufDelete", {
+        group = group,
+        buffer = buf,
+        callback = function()
+            M.stop_job(M.job_id)
+        end,
+    })
+
     return buf, win
 end
 M.job_id = nil

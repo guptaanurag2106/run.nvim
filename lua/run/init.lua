@@ -352,7 +352,6 @@ return M
 --TODO:random new lines in output
 --TODO:stdin
 --TODO:quickfile??
---TODO:closing buffer while the program is running
 --TODO:Weird escape behaviour on first Run (Default:...) Prompt
 --TODO:no need for fill input
 --TODO:command chaining? &&
