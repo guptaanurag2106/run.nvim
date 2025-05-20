@@ -97,6 +97,8 @@ vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFileAsync<CR>", { desc = "(Run.n
     * Unbuffered output of asynchronous commands can be seen in a new popup window which opens at the bottom
     * It support `q` to close and `<C-c>` to stop command execution
     * The buffer is reused if multiple `:RunAsync` are started
+- History
+    * If you provide a command other than default, it is saved to history and is suggested from then onwards for that filetype
 
 ## Configuration
 
@@ -110,8 +112,15 @@ require("run").setup({
   -- Ask for confirmation before executing commands
   ask_confirmation = false,
   
+  -- Auto-populate quickfix list with command output for sync commands
+  populate_qflist_sync = false,
   -- Auto-populate quickfix list with command output for async commands
   populate_qflist_async = true,
+  
+  -- Auto-open quickfix list with command output for sync commands
+  open_qflist_sync = false,
+  -- Auto-open quickfix list with command output for async commands
+  open_qflist_async = false,
   
   -- Enable command history
   history = {
@@ -127,7 +136,20 @@ require("run").setup({
       description = "Run Python module"
     },
     -- Add your own commands here
-  }
+  },
+  action_function = function(file_list, curr_dir)
+      -- return <cmd>, <requires_completion>
+      if #file_list == 1 and file_list[1] == "Makefile" then
+          return "make -B", false
+      end
+
+       for _, file in ipairs(file_list) do
+           if file == "go.mod" or file == "go.sum" then
+               return "go run .", false
+           end
+       end
+      return nil, false
+  end
 })
 ```
 
@@ -182,16 +204,20 @@ Run.nvim comes with sensible defaults for common file types:
 - **Web** (`.html`): Opens in default browser
 - **And some more...**
 
+- Special Types
+    * *no_extension*: When the file has no_extension, the default suggestion is `chmod +x`
+    * *dir*: When the selected entry is a directory, the default suggestion is to create a `.tar.gz`
+    * *multiple*: When a combination of different file/folder types is selected, 
+        the suggestion is to create a `.tar.gz`
+    * *default*: When none of the above categories can be inferred, the default suggestion
+        is to open it (`open` is macos, `xdg-open` in linux, this can be customized in `setup` function)
+
 You can override any of these or add your own in the configuration.
 
 ## Documentation
 
 For complete documentation, run `:help run.nvim` in Neovim after installation.
 
-## Contributing
-
-Contributions are welcome! Feel free to open issues or submit pull requests.
-
-## License
+## [License](License)
 
 MIT
