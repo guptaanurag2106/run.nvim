@@ -51,11 +51,8 @@ local create_reuse_win = function(window_name)
 
         if buf_name == window_name then
             vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, {})
-            -- vim.api.nvim_buf_set_name(buf_id, window_name)
-            -- vim.bo[buf_id].buftype = 'nofile'
-            -- vim.bo[buf_id].bufhidden = 'wipe'
-            -- vim.bo[buf_id].buflisted = true
-            -- vim.bo[buf_id].swapfile = false
+            vim.api.nvim_buf_set_name(buf_id, window_name)
+            vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, {})
             return buf_id, win_id
         end
     end
@@ -72,8 +69,13 @@ local create_reuse_win = function(window_name)
 
     return buf, win
 end
+M.job_id = nil
 
 M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
+    if M.job_id ~= nil then
+        print("\nA previous command is already running, please exit and run again")
+        return
+    end
     local buf, win = create_reuse_win("run://Command Output")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
@@ -87,11 +89,10 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     vim.api.nvim_buf_add_highlight(buf, -1, 'Title', 0, 0, -1)
     vim.api.nvim_buf_add_highlight(buf, -1, 'Special', 2, 0, -1)
 
-    local job_id
 
     local qf_list = {}
 
-    job_id = vim.fn.jobstart(cmd, {
+    M.job_id = vim.fn.jobstart(cmd, {
         cwd = curr_dir,
         detach = false,
         on_stdout = function(_, data)
@@ -129,6 +130,7 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         end,
         on_exit = function(_, exit_code)
             vim.schedule(function()
+                M.job_id = nil
                 if vim.api.nvim_buf_is_loaded(buf) then
                     local line_count = vim.api.nvim_buf_line_count(buf)
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
@@ -161,15 +163,15 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         stderr_buffered = false
     })
 
-    vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':lua require("run")._stop_job(' .. job_id .. ') vim.cmd("q")<CR>', {
+    vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':lua require("run")._stop_job(' .. M.job_id .. ') vim.cmd("q")<CR>', {
         noremap = true,
         silent = true
     })
-    vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':lua require("run")._stop_job(' .. job_id .. ')<CR>', {
+    vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':lua require("run")._stop_job(' .. M.job_id .. ')<CR>', {
         noremap = true,
         silent = true
     })
-
+    return M.job_id
 end
 
 M.stop_job = function(job_id)

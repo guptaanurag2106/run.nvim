@@ -1,12 +1,12 @@
-local Path      = require("plenary.path")
-local _browsers = require("run.browsers")
-local config    = require("run.config")
-local utils     = require("run.utils")
-local run       = require("run.run")
+local Path            = require("plenary.path")
+local _browsers       = require("run.browsers")
+local config          = require("run.config")
+local utils           = require("run.utils")
+local run             = require("run.run")
 
-local M         = {}
+local M               = {}
 
-M.setup         = function(opts)
+M.setup               = function(opts)
     config.setup(opts)
     _browsers.set_current_browser(config.options.current_browser)
 
@@ -126,13 +126,15 @@ M.runfile = function(range, async)
         end
     end
 
-    -- Run `input`
-    if async then
-        run.run_async(command, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
-    else
-        print("\n")
-        run.run_sync(command, curr_dir, config.options.populate_qflist_sync, config.options.open_qflist_sync)
-    end
+        -- Run `input`
+        if async then
+            local job_id = run.run_async(command, curr_dir, config.options.populate_qflist_async,
+                config.options.open_qflist_async)
+        else
+            print("\n")
+            run.run_sync(command, curr_dir, config.options.populate_qflist_sync,
+                config.options.open_qflist_sync)
+        end
 end
 
 
@@ -347,16 +349,13 @@ end
 
 return M
 
---TODO:jobs return value (valid command etc.)
+--TODO:random new lines in output
 --TODO:stdin
 --TODO:quickfile??
 --TODO:closing buffer while the program is running
 --TODO:Weird escape behaviour on first Run (Default:...) Prompt
 --TODO:no need for fill input
---TODO:Multiple RunFile at same time?
 --TODO:command chaining? &&
 --TODO:just use table of functions instead of default_actions (slow??)
---TODO:history
---TODO:While prompting user add to command or completely write new??
 --TODO:multiple action per file (options)
 --TODO:passing keys (commands like "less")
