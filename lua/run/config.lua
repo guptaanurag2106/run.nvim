@@ -34,6 +34,10 @@ local defaults = {
             command = "tar xzvf %1 -C %d",
             description = "Extracts archive file"
         },
+        [".zip"] = {
+            command = "unzip %1",
+            description = "Extracts zip file"
+        },
         [".exe"] = {
             command = "%1",
             description = "Runs the file (windows exec)"
@@ -121,14 +125,10 @@ local defaults = {
             return "make -B", false
         end
 
-        local is_go_mod = true
         for _, file in ipairs(file_list) do
-            if file ~= "go.mod" and file ~= "go.sum" then
-                is_go_mod = false
+            if file == "go.mod" or file == "go.sum" then
+                return "go run .", false
             end
-        end
-        if is_go_mod then
-            return "go run .", false
         end
         return nil, false
     end

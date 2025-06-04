@@ -54,9 +54,10 @@ your filesystem within Neovim and want to perform operations on the files you're
 ```lua
 {
     "guptaanurag2106/run.nvim",
-     config = function()
+    dependencies = { 'nvim-lua/plenary.nvim' }
+    config = function()
             require("run").setup({})
-     end,
+    end,
 }
 ```
 
@@ -65,9 +66,10 @@ your filesystem within Neovim and want to perform operations on the files you're
 ```lua
 use {
     "guptaanurag2106/run.nvim",
-     config = function()
+    requires = { {'nvim-lua/plenary.nvim'} }
+    config = function()
             require("run").setup({})
-     end
+    end
 }
 ```
 
