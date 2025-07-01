@@ -34,23 +34,33 @@ end
 M.runfile = function(range, async)
     local bufnr = vim.api.nvim_get_current_buf()
 
+    local default_command = "{open} %f"
+    local need_completion = true
+    local skip_get_command = false;
+
     local ok, file_list = pcall(M._get_current_files, range, bufnr)
     if not ok or file_list == nil then
-        print("Cannot get current files. Please ensure you are in the file browser: " ..
-            config.options.current_browser .. "\n" .. file_list)
-        return
+        -- print("Cannot get current files. Please ensure you are in the file browser: " ..
+        --     config.options.current_browser .. "\n" .. file_list)
+        -- return
+        default_command = ""; -- Default incase using from somewhere else
+        file_list = {"-"}
+        need_completion = false;
+        skip_get_command = true
     end
 
     local ok1, curr_dir = pcall(M._get_current_dir, bufnr)
     if not ok1 or curr_dir == nil or curr_dir:len() == 0 then
-        print("Cannot get current directory. Please ensure you are in the file browser: " ..
-            config.options.current_browser .. "\n" .. curr_dir)
-        return
+        -- print("Cannot get current directory. Please ensure you are in the file browser: " ..
+        --     config.options.current_browser .. "\n" .. curr_dir)
+        -- return
+        default_command = ""; -- Default incase using from somewhere else
+        curr_dir = ""
+        need_completion = false;
+        skip_get_command = true
     end
 
-    local default_command = "{open} %f"
-    local need_completion = true
-    if config.options.action_function ~= nil then
+    if not skip_get_command and config.options.action_function ~= nil then
         local ok, action_function_command, func_need_completion = pcall(config.options.action_function, file_list,
             curr_dir)
         if ok and action_function_command ~= nil then
