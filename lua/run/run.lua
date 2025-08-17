@@ -160,6 +160,10 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                     vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 1, 0, -1)
                     vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 2, 0, -1)
                     vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
+
+                    if exit_code ~= 0 then
+                        vim.api.nvim_set_current_win(win)
+                    end
                 end
                 if populate_qflist then
                     vim.fn.setqflist(qf_list, "r")
