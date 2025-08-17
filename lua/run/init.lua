@@ -37,6 +37,7 @@ M.runfile = function(range, async)
     local default_command = "{open} %f"
     local need_completion = true
     local skip_get_command = false;
+    local out_of_browser = false;
 
     local ok, file_list = pcall(M._get_current_files, range, bufnr)
     if not ok or file_list == nil then
@@ -44,9 +45,8 @@ M.runfile = function(range, async)
         --     config.options.current_browser .. "\n" .. file_list)
         -- return
         default_command = ""; -- Default incase using from somewhere else
-        file_list = {"-"}
-        need_completion = false;
-        skip_get_command = true
+        file_list = {}
+        out_of_browser = true;
     end
 
     local ok1, curr_dir = pcall(M._get_current_dir, bufnr)
@@ -56,11 +56,10 @@ M.runfile = function(range, async)
         -- return
         default_command = ""; -- Default incase using from somewhere else
         curr_dir = ""
-        need_completion = false;
-        skip_get_command = true
+        out_of_browser = true;
     end
 
-    if not skip_get_command and config.options.action_function ~= nil then
+    if not out_of_browser and not skip_get_command and config.options.action_function ~= nil then
         local ok, action_function_command, func_need_completion = pcall(config.options.action_function, file_list,
             curr_dir)
         if ok and action_function_command ~= nil then
@@ -92,6 +91,9 @@ M.runfile = function(range, async)
 
 
     local prompt = "[Run (Default: " .. default_command .. ") on " .. table.concat(file_list, ", ") .. "]: "
+    if out_of_browser then
+        prompt = "[Run]: "
+    end
 
     local input = vim.fn.input(prompt, suggestion_hist)
     local command = ""
@@ -102,7 +104,7 @@ M.runfile = function(range, async)
         need_completion = true --TODO:pass in commands that don't need completion (`make`)
     end
 
-    if need_completion then
+    if not out_of_browser and need_completion then
         command = M._fill_input(command, curr_dir, file_list)
     end
     command = command:gsub("%s+", " ")
