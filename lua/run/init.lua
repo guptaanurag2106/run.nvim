@@ -365,6 +365,7 @@ return M
 --TODO:stdin
 --TODO:quickfile??
 --FIX:weird lines, formatting issues, extra \n (check deque)
+--FIX:premature output window close switch buffer etc.
 --TODO:Weird escape behaviour on first Run (Default:...) Prompt
 --TODO:no need for fill input
 --TODO:command chaining? &&

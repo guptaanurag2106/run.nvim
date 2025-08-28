@@ -62,7 +62,7 @@ local create_reuse_win = function(window_name)
     local win = vim.api.nvim_get_current_win()
 
     vim.bo[buf].buftype = 'nofile'
-    vim.bo[buf].bufhidden = 'wipe'
+    vim.bo[buf].bufhidden = 'hide'
     vim.bo[buf].buflisted = true
     vim.bo[buf].swapfile = false
     vim.api.nvim_buf_set_name(buf, window_name)
