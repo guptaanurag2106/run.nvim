@@ -79,11 +79,11 @@ local defaults = {
             description = "Runs Go file"
         },
         [".c"] = {
-            command = "gcc %f -o a.out",
+            command = "gcc %f -o a.out && ./a.out",
             description = "Compiles and runs C file"
         },
         [".cpp"] = {
-            command = "g++ %f -o a.out",
+            command = "g++ %f -o a.out && ./a.out",
             description = "Compiles and runs C++ file"
         },
         [".java"] = {

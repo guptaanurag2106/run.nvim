@@ -59,6 +59,12 @@ M.runfile = function(range, async)
         out_of_browser = true;
     end
 
+    for i, file in ipairs(file_list) do
+       if file == ".." then
+            table.remove(file_list, i)
+        end
+    end
+
     if not out_of_browser and not skip_get_command and config.options.action_function ~= nil then
         local ok, action_function_command, func_need_completion = pcall(config.options.action_function, file_list,
             curr_dir)
@@ -97,7 +103,9 @@ M.runfile = function(range, async)
 
     local input = vim.fn.input(prompt, suggestion_hist)
     local command = ""
-    if not input or string.len(input) == 0 then
+    if not input then
+        return
+    elseif string.len(input) == 0 then
         command = default_command
     else
         command = input
@@ -365,9 +373,7 @@ return M
 --TODO:stdin
 --TODO:quickfile??
 --FIX:weird lines, formatting issues, extra \n (check deque)
---FIX:premature output window close switch buffer etc.
 --TODO:Weird escape behaviour on first Run (Default:...) Prompt
 --TODO:no need for fill input
---TODO:command chaining? &&
 --TODO:multiple action per file (options)
 --TODO:passing keys (commands like "less")

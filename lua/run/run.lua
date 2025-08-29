@@ -45,15 +45,21 @@ M.run_async_new = function(cmd)
 end
 
 local create_reuse_win = function(window_name)
-    for _, win_id in ipairs(vim.api.nvim_list_wins()) do
-        local buf_id = vim.api.nvim_win_get_buf(win_id)
-        local buf_name = vim.api.nvim_buf_get_name(buf_id)
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(buf) and vim.api.nvim_buf_get_name(buf) == window_name then
+            -- If buffer is valid, check if it's in a window
+            for _, win in ipairs(vim.api.nvim_list_wins()) do
+                if vim.api.nvim_win_get_buf(win) == buf then
+                    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+                    return buf, win
+                end
+            end
 
-        if buf_name == window_name then
-            vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, {})
-            vim.api.nvim_buf_set_name(buf_id, window_name)
-            vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, {})
-            return buf_id, win_id
+            vim.cmd("botright 15new")
+            local win = vim.api.nvim_get_current_win()
+            vim.api.nvim_win_set_buf(win, buf)
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+            return buf, win
         end
     end
 
@@ -62,7 +68,7 @@ local create_reuse_win = function(window_name)
     local win = vim.api.nvim_get_current_win()
 
     vim.bo[buf].buftype = 'nofile'
-    vim.bo[buf].bufhidden = 'hide'
+    vim.bo[buf].bufhidden = ''
     vim.bo[buf].buflisted = true
     vim.bo[buf].swapfile = false
     vim.api.nvim_buf_set_name(buf, window_name)
@@ -97,9 +103,13 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         "--------------------------------------------------------------------------------",
     })
 
-    vim.api.nvim_buf_add_highlight(buf, -1, 'Title', 0, 0, -1)
-    vim.api.nvim_buf_add_highlight(buf, -1, 'Special', 2, 0, -1)
+    local ns_id = vim.api.nvim_create_namespace("")
 
+
+    vim.hl.range(buf, ns_id, "Title", { 0, 0 }, { 0, -1 },
+        { inclusive = true })
+    vim.hl.range(buf, ns_id, "Special", { 2, 0 }, { 2, -1 },
+        { inclusive = true })
 
     local qf_list = {}
 
@@ -128,7 +138,8 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                         local line_count = vim.api.nvim_buf_line_count(buf)
                         vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, data)
                         for i = 0, #data - 1 do
-                            vim.api.nvim_buf_add_highlight(buf, -1, "ErrorMsg", line_count + i, 0, -1)
+                            vim.hl.range(buf, ns_id, "ErrorMsg", { line_count + i, 0 }, { line_count + i, -1 },
+                                { inclusive = true })
                         end
                         vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
                     end
@@ -149,16 +160,18 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                         and "Status: Completed Successfully (exit code 0)"
                         or "Status: Failed (exit code " .. exit_code .. ")"
                     })
-                    -- vim.api.nvim_buf_clear_namespace(buf, -1, 1, 2)
-                    vim.api.nvim_buf_add_highlight(buf, -1, exit_code == 0 and 'String' or 'ErrorMsg', line_count, 0,
-                        -1)
+                    vim.hl.range(buf, ns_id, exit_code == 0 and 'String' or 'ErrorMsg', { line_count, 0 },
+                        { line_count, -1 },
+                        { inclusive = true })
 
                     vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + 1, false, {
                         "",
                         "Command finished. Press 'q' to exit"
                     })
-                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 1, 0, -1)
-                    vim.api.nvim_buf_add_highlight(buf, -1, 'Comment', line_count + 2, 0, -1)
+                    vim.hl.range(buf, ns_id, "Comment", { line_count + 1, 0 }, { line_count + 1, -1 },
+                        { inclusive = true })
+                    vim.hl.range(buf, ns_id, "Comment", { line_count + 2, 0 }, { line_count + 2, -1 },
+                        { inclusive = true })
                     vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
 
                     if exit_code ~= 0 then
