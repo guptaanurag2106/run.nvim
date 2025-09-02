@@ -369,10 +369,8 @@ end
 
 return M
 
---TODO:random new lines in output
 --TODO:stdin
 --TODO:quickfile??
---FIX:weird lines, formatting issues, extra \n (check deque)
 --TODO:Weird escape behaviour on first Run (Default:...) Prompt
 --TODO:no need for fill input
 --TODO:multiple action per file (options)

@@ -99,8 +99,8 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         "Running: " .. vim.inspect(cmd),
         "",
         "Output",
-        "",
         "--------------------------------------------------------------------------------",
+        ""
     })
 
     local ns_id = vim.api.nvim_create_namespace("")
@@ -117,38 +117,57 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         cwd = curr_dir,
         detach = false,
         on_stdout = function(_, data)
-            if data and #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
-                vim.schedule(function()
-                    if vim.api.nvim_buf_is_loaded(buf) then
-                        local line_count = vim.api.nvim_buf_line_count(buf)
-                        vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, data)
-                        vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
-                    end
-
-                    if populate_qflist then
-                        table.insert(qf_list, { text = table.concat(data, "\n") })
-                    end
-                end)
+            if not data then
+                return
             end
+
+            -- Remove trailing empty line Neovim sometimes adds
+            -- if data[#data] == "" then
+            --     table.remove(data, #data)
+            -- end
+            if #data == 0 then
+                return
+            end
+
+            vim.schedule(function()
+                if not vim.api.nvim_buf_is_loaded(buf) then
+                    return
+                end
+
+                local line_count = vim.api.nvim_buf_line_count(buf)
+                local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
+                data[1] = last_line .. data[1]
+                vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
+
+                vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
+
+                if populate_qflist then
+                    table.insert(qf_list, { text = table.concat(data, "\n") })
+                end
+            end)
         end,
         on_stderr = function(_, data)
-            if data and #data > 1 or (data[1] ~= "" and data[1] ~= nil) then
-                vim.schedule(function()
-                    if vim.api.nvim_buf_is_loaded(buf) then
-                        local line_count = vim.api.nvim_buf_line_count(buf)
-                        vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, data)
-                        for i = 0, #data - 1 do
-                            vim.hl.range(buf, ns_id, "ErrorMsg", { line_count + i, 0 }, { line_count + i, -1 },
-                                { inclusive = true })
-                        end
-                        vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
-                    end
-
-                    if populate_qflist then
-                        table.insert(qf_list, { text = table.concat(data, "\n") })
-                    end
-                end)
+            if not data or #data == 0 then
+                return
             end
+            vim.schedule(function()
+                if not vim.api.nvim_buf_is_loaded(buf) then
+                    return
+                end
+
+                local line_count = vim.api.nvim_buf_line_count(buf)
+                local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
+                data[1] = last_line .. data[1]
+                vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
+
+                vim.hl.range(buf, ns_id, "ErrorMsg", { line_count - 1, 0 }, { line_count + #data - 1, -1 },
+                    { inclusive = true })
+                vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
+
+                if populate_qflist then
+                    table.insert(qf_list, { text = table.concat(data, "\n") })
+                end
+            end)
         end,
         on_exit = function(_, exit_code)
             vim.schedule(function()
@@ -168,9 +187,7 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                         "",
                         "Command finished. Press 'q' to exit"
                     })
-                    vim.hl.range(buf, ns_id, "Comment", { line_count + 1, 0 }, { line_count + 1, -1 },
-                        { inclusive = true })
-                    vim.hl.range(buf, ns_id, "Comment", { line_count + 2, 0 }, { line_count + 2, -1 },
+                    vim.hl.range(buf, ns_id, "Comment", { line_count + 1, 0 }, { line_count + 2, -1 },
                         { inclusive = true })
                     vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
 
@@ -181,7 +198,6 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                 if populate_qflist then
                     vim.fn.setqflist(qf_list, "r")
                 end
-                -- vim.diagnostic.setqflist(qf_list, "r")
                 if open_qflist then
                     vim.cmd("copen")
                 end
