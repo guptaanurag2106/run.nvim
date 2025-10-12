@@ -18,12 +18,12 @@ M.setup         = function(opts)
         end
     end
     vim.api.nvim_create_user_command("RunFile", function(args)
-        M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, false)
-    end, { desc = "Run `command` on selected/hovered files", range = true })
-
-    vim.api.nvim_create_user_command("RunFileAsync", function(args)
         M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, true)
     end, { desc = "Run `command` asynchronously on selected/hovered files", range = true })
+
+    vim.api.nvim_create_user_command("RunFileSync", function(args)
+        M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, false)
+    end, { desc = "Run `command` on selected/hovered files", range = true })
 end
 
 
@@ -60,7 +60,7 @@ M.runfile = function(range, async)
     end
 
     for i, file in ipairs(file_list) do
-       if file == ".." then
+        if file == ".." then
             table.remove(file_list, i)
         end
     end

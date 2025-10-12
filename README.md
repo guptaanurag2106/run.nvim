@@ -76,14 +76,14 @@ use {
 ## Quick Start
 
 1. Navigate to a file in your file browser ([oil.nvim](https://github.com/stevearc/oil.nvim) by default)
-2. Press `:RunFile` to run the appropriate command for that file type
-3. For background execution with live output in a new buffer, use `:RunFileAsync` instead
+2. For background execution with live output in a new buffer, use `:RunFile`
+3. Press `:RunFileSync` to run the appropriate command for that file type synchronously
 
 ## User Commands and Keymaps
-The plugin creates two user commands `RunFile`, `RunFileAsync`. No keymaps are however
+The plugin creates two user commands `RunFile`, `RunFileSync`. No keymaps are however
 created and it's left to the user. An example keymap could be as simple as
 ```lua
-vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFileAsync<CR>", { desc = "(Run.nvim) Async" })
+vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFile<CR>", { desc = "(Run.nvim) Async" })
 ```
 
 ## Features
@@ -98,7 +98,7 @@ vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFileAsync<CR>", { desc = "(Run.n
 - Output Window
     * Unbuffered output of asynchronous commands can be seen in a new popup window which opens at the bottom
     * It support `q` to close and `<C-c>` to stop command execution
-    * The buffer is reused if multiple `:RunAsync` are started
+    * The buffer is reused if multiple `:RunFile` are started
 - History
     * If you provide a command other than default, it is saved to history and is suggested from then onwards for that filetype
 

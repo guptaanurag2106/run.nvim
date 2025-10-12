@@ -59,13 +59,14 @@ Example configuration with default values:
 ==============================================================================
 4. COMMANDS                                                       *run-commands*
 
-*:RunFile*         Run a command on the current file/folder(s) (synchronous)
+*:RunFile*          Run a command on the current file/folder(s) (asynchronous)
+                  The command runs in the background and shows real-time
+                  output in a split window. Allows you to continue working.
+
+*:RunFileSync*      Run a command on the current file/folder(s) (synchronous)
                   The command blocks until execution completes and shows
                   output in a split window below.
 
-*:RunFileAsync*    Run a command on the current file/folder(s) (asynchronous)
-                  The command runs in the background and shows real-time
-                  output in a split window. Allows you to continue working.
 
 ==============================================================================
 5. FUNCTIONS                                                     *run-functions*

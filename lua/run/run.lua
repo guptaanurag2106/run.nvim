@@ -28,21 +28,21 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
 end
 
-M.run_async_new = function(cmd)
-    cmd = utils.split(cmd, " ")
-    vim.system(cmd, {
-        text = true, -- Return text instead of bytes
-    }, function(result)
-        vim.notify(result.stdout, vim.log.levels.INFO)
-        vim.notify(result.stderr, vim.log.levels.ERROR)
-        if result.code == 0 then
-            vim.notify("\nStatus: Completed Successfully (exit code 0)", vim.log.levels.INFO)
-        else
-            vim.notify("\nStatus: Completed Successfully (exit code " .. result.code .. ")",
-                vim.log.levels.ERROR)
-        end
-    end)
-end
+-- M.run_async_new = function(cmd)
+--     cmd = utils.split(cmd, " ")
+--     vim.system(cmd, {
+--         text = true, -- Return text instead of bytes
+--     }, function(result)
+--         vim.notify(result.stdout, vim.log.levels.INFO)
+--         vim.notify(result.stderr, vim.log.levels.ERROR)
+--         if result.code == 0 then
+--             vim.notify("\nStatus: Completed Successfully (exit code 0)", vim.log.levels.INFO)
+--         else
+--             vim.notify("\nStatus: Completed Successfully (exit code " .. result.code .. ")",
+--                 vim.log.levels.ERROR)
+--         end
+--     end)
+-- end
 
 local create_reuse_win = function(window_name)
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
