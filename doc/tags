@@ -3,7 +3,7 @@
 %d/%f	run.txt	/*%d\/%f*
 %f	run.txt	/*%f*
 :RunFile	run.txt	/*:RunFile*
-:RunFileAsync	run.txt	/*:RunFileAsync*
+:RunFileSync	run.txt	/*:RunFileSync*
 action_function	run.txt	/*action_function*
 ask_confirmation	run.txt	/*ask_confirmation*
 current_browser	run.txt	/*current_browser*

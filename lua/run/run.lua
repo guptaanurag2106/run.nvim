@@ -137,6 +137,11 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                 local line_count = vim.api.nvim_buf_line_count(buf)
                 local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
                 data[1] = last_line .. data[1]
+                for i = 1, #data do
+                    -- vim represents null as \n and new line as \r
+                    -- https://vim.fandom.com/wiki/Newlines_and_nulls_in_Vim_script
+                    data[i] = data[i]:gsub("\n", "")
+                end
                 vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
 
                 vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
@@ -158,6 +163,11 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                 local line_count = vim.api.nvim_buf_line_count(buf)
                 local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
                 data[1] = last_line .. data[1]
+                for i = 1, #data do
+                    -- vim represents null as \n and new line as \r
+                    -- https://vim.fandom.com/wiki/Newlines_and_nulls_in_Vim_script
+                    data[i] = data[i]:gsub("\n", "")
+                end
                 vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
 
                 vim.hl.range(buf, ns_id, "ErrorMsg", { line_count - 1, 0 }, { line_count + #data - 1, -1 },
