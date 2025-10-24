@@ -101,6 +101,8 @@ vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFile<CR>", { desc = "(Run.nvim) 
     * The buffer is reused if multiple `:RunFile` are started
 - History
     * If you provide a command other than default, it is saved to history and is suggested from then onwards for that filetype
+- Populating Quickfix List
+    * Based on the [config](#Configuration), the quickfix list is automatically parsed and populated which can be opened via [trouble.nvim](https://github.com/folke/trouble.nvim) or just `:copen`.
 
 ## Configuration
 
