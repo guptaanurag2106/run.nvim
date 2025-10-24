@@ -1,6 +1,36 @@
 local utils = require("run.utils")
 local M = {}
 
+M.stop_job = function(job_id)
+    if job_id then
+        vim.fn.jobstop(job_id)
+        M.job_id = nil
+    end
+end
+
+local parse_qf_list = function(data)
+    local entries = {}
+
+    for _, line in ipairs(data) do
+        local filename, lnum, col, message = string.match(line, "(.-):(%d+):(%d+):(.*)")
+        if filename and lnum and col then
+            lnum = tonumber(lnum)
+            col = tonumber(col)
+
+            local entry = {
+                filename = filename,
+                lnum = lnum,
+                col = col,
+                text = message
+            }
+
+            table.insert(entries, entry)
+        end
+    end
+
+    return entries
+end
+
 M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     cmd = utils.split(cmd, " ")
     -- Using newer vim.system API (Neovim 0.10+)
@@ -20,7 +50,7 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
 
     if populate_qflist then
-        vim.fn.setqflist({ result.stdout, result.stderr }, "r")
+        vim.fn.setqflist(parse_qf_list({ result.stdout, result.stderr }), "r")
     end
 
     if open_qflist then
@@ -90,7 +120,8 @@ M.job_id = nil
 
 M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     if M.job_id ~= nil then
-        print("\nA previous command is already running, please exit and run again")
+        print("\nStopping the previous running command")
+        M.stop_job(M.job_id)
         return
     end
     local buf, win = create_reuse_win("run://Command Output")
@@ -125,15 +156,14 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
             -- if data[#data] == "" then
             --     table.remove(data, #data)
             -- end
-            if #data == 0 then
+            if #data == 0 or not vim.api.nvim_buf_is_loaded(buf) then
                 return
             end
 
             vim.schedule(function()
-                if not vim.api.nvim_buf_is_loaded(buf) then
-                    return
+                if populate_qflist then
+                    qf_list = utils.appendTable(qf_list, data)
                 end
-
                 local line_count = vim.api.nvim_buf_line_count(buf)
                 local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
                 data[1] = last_line .. data[1]
@@ -145,21 +175,17 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                 vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
 
                 vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
-
-                if populate_qflist then
-                    table.insert(qf_list, { text = table.concat(data, "\n") })
-                end
             end)
         end,
+
         on_stderr = function(_, data)
-            if not data or #data == 0 then
+            if not data or #data == 0 or not vim.api.nvim_buf_is_loaded(buf) then
                 return
             end
             vim.schedule(function()
-                if not vim.api.nvim_buf_is_loaded(buf) then
-                    return
+                if populate_qflist then
+                    qf_list = utils.appendTable(qf_list, data)
                 end
-
                 local line_count = vim.api.nvim_buf_line_count(buf)
                 local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
                 data[1] = last_line .. data[1]
@@ -173,12 +199,9 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                 vim.hl.range(buf, ns_id, "ErrorMsg", { line_count - 1, 0 }, { line_count + #data - 1, -1 },
                     { inclusive = true })
                 vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
-
-                if populate_qflist then
-                    table.insert(qf_list, { text = table.concat(data, "\n") })
-                end
             end)
         end,
+
         on_exit = function(_, exit_code)
             vim.schedule(function()
                 M.job_id = nil
@@ -201,15 +224,22 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                         { inclusive = true })
                     vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
 
-                    if exit_code ~= 0 then
-                        vim.api.nvim_set_current_win(win)
-                    end
+                    -- if exit_code ~= 0 then
+                    --     vim.api.nvim_set_current_win(win)
+                    -- end
                 end
                 if populate_qflist then
-                    vim.fn.setqflist(qf_list, "r")
+                    vim.fn.setqflist(parse_qf_list(qf_list), "r")
                 end
-                if open_qflist then
-                    vim.cmd("copen")
+                if exit_code ~= 0 and open_qflist then
+                    local ok, trouble = pcall(require, 'trouble')
+                    if ok then
+                        -- Open Trouble quickfix view
+                        trouble.open('quickfix')
+                    else
+                        -- Fallback to the normal quickfix window
+                        vim.cmd('copen')
+                    end
                 end
             end)
         end,
@@ -226,12 +256,6 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         silent = true
     })
     return M.job_id
-end
-
-M.stop_job = function(job_id)
-    if job_id then
-        vim.fn.jobstop(job_id)
-    end
 end
 
 return M

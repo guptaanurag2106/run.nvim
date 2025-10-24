@@ -76,4 +76,11 @@ M.get_file_extension = function(filename)
     return nil
 end
 
+M.appendTable = function(destinationTable, sourceTable)
+    for i = 1, #sourceTable do
+        table.insert(destinationTable, sourceTable[i])
+    end
+    return destinationTable
+end
+
 return M
