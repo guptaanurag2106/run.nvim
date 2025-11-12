@@ -75,34 +75,42 @@ end
 -- end
 
 local create_reuse_win = function(window_name)
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.api.nvim_buf_is_loaded(buf) and vim.api.nvim_buf_get_name(buf) == window_name then
-            -- If buffer is valid, check if it's in a window
-            for _, win in ipairs(vim.api.nvim_list_wins()) do
-                if vim.api.nvim_win_get_buf(win) == buf then
-                    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-                    return buf, win
-                end
-            end
-
-            vim.cmd("botright 15new")
-            local win = vim.api.nvim_get_current_win()
-            vim.api.nvim_win_set_buf(win, buf)
-            vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-            return buf, win
+    local orig_win = vim.api.nvim_get_current_win()
+    local buf
+    for _, b in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(b)
+            and vim.api.nvim_buf_get_name(b) == window_name then
+            buf = b
+            break
         end
     end
 
-    vim.cmd("botright 15new")
-    local buf = vim.api.nvim_get_current_buf()
-    local win = vim.api.nvim_get_current_win()
+    if not buf then
+        buf = vim.api.nvim_create_buf(true, false)
+        vim.api.nvim_buf_set_name(buf, window_name)
+        vim.bo[buf].buftype = "nofile"
+        vim.bo[buf].bufhidden = "hide"
+        vim.bo[buf].swapfile = false
+        vim.bo[buf].modifiable = true
+    end
 
-    vim.bo[buf].buftype = 'nofile'
-    vim.bo[buf].bufhidden = ''
-    vim.bo[buf].buflisted = true
-    vim.bo[buf].swapfile = false
-    vim.api.nvim_buf_set_name(buf, window_name)
+    local existing_win
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_is_valid(win)
+            and vim.api.nvim_win_get_buf(win) == buf then
+            existing_win = win
+            break
+        end
+    end
 
+    local win
+    if existing_win then
+        win = existing_win
+    else
+        vim.cmd("botright 15split")
+        win = vim.api.nvim_get_current_win()
+        vim.api.nvim_win_set_buf(win, buf)
+    end
     local group = vim.api.nvim_create_augroup("RunNvim_BufferCloseHandler", { clear = true })
 
     -- Set up an autocommand for the BufDelete event
@@ -113,6 +121,7 @@ local create_reuse_win = function(window_name)
             M.stop_job(M.job_id)
         end,
     })
+    vim.api.nvim_set_current_win(orig_win)
 
     return buf, win
 end
@@ -143,6 +152,7 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         { inclusive = true })
 
     local qf_list = {}
+    local start_time = vim.uv.hrtime()
 
     M.job_id = vim.fn.jobstart(cmd, {
         cwd = curr_dir,
@@ -206,6 +216,13 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
             vim.schedule(function()
                 M.job_id = nil
                 if vim.api.nvim_buf_is_loaded(buf) then
+                    local end_time = vim.uv.hrtime()
+
+                    local elapsed_time_ns = end_time - start_time
+                    local elapsed_time_s = elapsed_time_ns / 1e9
+                    local seconds = math.floor(elapsed_time_s)
+                    local milliseconds = math.floor((elapsed_time_s - seconds) * 1000)
+
                     local line_count = vim.api.nvim_buf_line_count(buf)
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
                         exit_code == 0
@@ -218,15 +235,15 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
 
                     vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + 1, false, {
                         "",
-                        "Command finished. Press 'q' to exit"
+                        string.format("Command finished in %d.%03d seconds. Press 'q' to exit", seconds, milliseconds)
                     })
                     vim.hl.range(buf, ns_id, "Comment", { line_count + 1, 0 }, { line_count + 2, -1 },
                         { inclusive = true })
                     vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
 
-                    -- if exit_code ~= 0 then
-                    --     vim.api.nvim_set_current_win(win)
-                    -- end
+                    if exit_code ~= 0 then
+                        vim.api.nvim_set_current_win(win)
+                    end
                 end
                 if populate_qflist then
                     vim.fn.setqflist(parse_qf_list(qf_list), "r")
