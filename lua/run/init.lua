@@ -101,7 +101,15 @@ M.runfile = function(range, async)
         prompt = "[Run]: "
     end
 
-    local input = vim.fn.input(prompt, suggestion_hist)
+    local input
+    local done = false
+
+    vim.ui.input({ prompt = prompt, default = suggestion_hist, completion = "file_in_path" }, function(inp)
+        input = inp
+        done = true
+    end)
+    vim.wait(10000, function() return done end)
+    -- input = vim.fn.input(prompt, suggestion_hist, "file")
     local command = ""
     if not input then
         return
@@ -369,9 +377,6 @@ end
 
 return M
 
---TODO:stdin
---TODO:quickfile??
 --TODO:Weird escape behaviour on first Run (Default:...) Prompt
 --TODO:no need for fill input
 --TODO:multiple action per file (options)
---TODO:passing keys (commands like "less")

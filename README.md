@@ -132,8 +132,7 @@ require("run").setup({
   -- Enable command history
   history = {
     enable = true,
-    history_file = vim.fn.stdpath("cache") .. "/run.nvim.hist"
-  },
+    history_file = vim.fn.stdpath("data") .."/run.nvim.json"  },
   
   -- Customize default actions for specific file types
   default_actions = {
@@ -151,7 +150,7 @@ require("run").setup({
       end
 
        for _, file in ipairs(file_list) do
-           if file == "go.mod" or file == "go.sum" then
+           i file == "go.mod" or file == "go.sum" then
                return "go run .", false
            end
        end

@@ -43,7 +43,7 @@ Example configuration with default values:
         open_qflist_async = false, --open qflist after finishing (for async)
         history = {
             enable = true,
-            history_file = vim.fn.stdpath("cache") .. "/run.nvim.hist"
+            history_file = vim.fn.stdpath("data") .. "/run.nvim.json"
         },
         default_actions = {
             -- ... see detailed default actions below
