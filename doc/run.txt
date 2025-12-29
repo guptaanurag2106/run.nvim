@@ -24,7 +24,7 @@ with proper path handling and output visualization.
 ==============================================================================
 2. REQUIREMENTS                                               *run-requirements*
 
-- Neovim >= 0.7.0
+- Neovim >= 0.10.0 (required for vim.system)
 - Oil.nvim (recommended, but optional with custom browser integrations)
 
 ==============================================================================
@@ -34,7 +34,7 @@ Example configuration with default values:
 >lua
     require("run").setup({
         current_browser = "oil",
-        ask_confirmation = false, -- ask confirmation before running the command
+        ask_confirmation = true, -- ask confirmation before running the command
         open_cmd = nil, -- auto-detected based on OS (example xdg-open for
                         -- linux, open for macos)
         populate_qflist_sync = false, --populate quickfix list for sync commands
@@ -62,6 +62,9 @@ Example configuration with default values:
 *:RunFile*          Run a command on the current file/folder(s) (asynchronous)
                   The command runs in the background and shows real-time
                   output in a split window. Allows you to continue working.
+                  In the output window:
+                  - Press 'q' to close the window (stops the job).
+                  - Press '<C-c>' to stop the running job.
 
 *:RunFileSync*      Run a command on the current file/folder(s) (synchronous)
                   The command blocks until execution completes and shows
@@ -123,7 +126,7 @@ Example configuration with default values:
 *current_browser*             String (default: "oil")
     The file browser to use for getting files and directories.
 
-*ask_confirmation*            Boolean (default: false)  
+*ask_confirmation*            Boolean (default: true)  
     Whether to ask for confirmation before running commands.
 
 *open_cmd*                    String or nil (default: nil)
@@ -135,6 +138,7 @@ Example configuration with default values:
 
 *populate_qflist_async*       Boolean (default: true)
     Whether to populate quickfix list for asynchronous commands.
+    If trouble.nvim is installed, it will be used to open the list.
 
 *open_qflist_sync*            Boolean (default: false)
     Whether to open quickfix list after synchronous commands.
@@ -153,26 +157,33 @@ Example configuration with default values:
     Example entries:
 >lua
     [".py"] = {           -- Python files
-        command = "python %d/%f",
+        command = "python %f",
         description = "Run python files (with default python interpreter)"
     },
     ["dir"] = {           -- Directories
-        command = "tar czvf %d/%1.tar.gz -C %d %f",
+        command = "tar czvf %1.tar.gz -C %d %f",
         description = "tar.gz on the folder or multiple folders"
     },
     ["exe"] = {           -- Executable files
-        command = "%d/%1",
+        command = "./%1",
         description = "Runs the file (only one) if it is executable"
     }
 <
 *action_function*             Function
-    Custom function to map selected list of files to a command
+    Custom function to map selected list of files to a command.
+    Useful for project-specific commands (e.g., Go, Makefile).
     Example:
 >lua
     action_function = function(file_list, curr_dir)
         if #file_list == 1 and file_list[1] == "Makefile" then
             return "make -B", false --false signifies the command is complete
                                  --and needs no filling (%f, %d etc.)
+        end
+        -- Default Go support
+        for _, file in ipairs(file_list) do
+            if file == "go.mod" or file == "go.sum" then
+                return "go run .", false
+            end
         end
     end
 <
@@ -185,7 +196,7 @@ with actual paths:
 
 *%f*               All file/folder names under cursor, space-separated
 *%d*               Current directory path
-*%1*, *%2*, etc.    Individual file/folder names (numbered)
+*%1*, *%2*, etc.    Individual file/folder names (numbered, includes extension)
 *%d/%f*            Full paths for all files (equivalent to directory + filename)
 *%%*               Literal % character
 *{open}*           System-specific open command (xdg-open, open, start)
@@ -197,19 +208,31 @@ Example of placeholder usage:
 >lua
     -- For Python files, run with Python interpreter
     [".py"] = {
-        command = "python %d/%f",  -- Run: python /path/to/file.py
+        command = "python %f",  -- Run: python file.py
         description = "Run python files"
+    },
+
+    -- For Rust files, compile and run
+    [".rs"] = {
+        command = "rustc %f -o a.out && ./a.out",
+        description = "Compiles and runs Rust file"
+    },
+
+    -- For Zig files, run
+    [".zig"] = {
+        command = "zig run %f",
+        description = "Runs Zig file"
     },
 
     -- For tar.gz files, extract to current directory
     [".tar.gz"] = {
-        command = "tar xzvf %d/%f -C %d",  -- Extract the archive to current dir
+        command = "tar xzvf %1 -C %d",  -- Extract the archive to current dir
         description = "Extracts archive file"
     },
 
     -- For C files, compile and run
     [".c"] = {
-        command = "gcc %d/%f -o %d/a.out && %d/a.out",
+        command = "gcc %f -o a.out && ./a.out",
         description = "Compiles and runs C file"
     }
 <

@@ -236,13 +236,6 @@ M._fill_input = function(input, curr_dir, file_list)
     local placeholder_found = false
     local result = input
 
-    local path_string = ""
-    for i, file in ipairs(file_list) do
-        if i > 1 then
-            path_string = path_string .. " " -- Add a space between elements
-        end
-        path_string = path_string .. curr_dir .. utils.path_separator .. file
-    end
 
     -- Replace numbered placeholders surrounded by spaces " %1 ", " %2 ", etc.
     for i, file in ipairs(file_list) do
@@ -255,6 +248,13 @@ M._fill_input = function(input, curr_dir, file_list)
 
     -- Special Case: %d/%f equivalent to %d/%1 %d/%2....
     if result:match("%%d" .. utils.path_separator .. "%%f") then
+        local path_string = ""
+        for i, file in ipairs(file_list) do
+            if i > 1 then
+                path_string = path_string .. " " -- Add a space between elements
+            end
+            path_string = path_string .. curr_dir .. utils.path_separator .. file
+        end
         result = result:gsub("%%d" .. utils.path_separator .. "%%f", path_string)
         placeholder_found = true
     end
@@ -285,6 +285,13 @@ M._fill_input = function(input, curr_dir, file_list)
 
     -- If no placeholder was found, append filepaths at the end
     if not placeholder_found then
+        local path_string = ""
+        for i, file in ipairs(file_list) do
+            if i > 1 then
+                path_string = path_string .. " " -- Add a space between elements
+            end
+            path_string = path_string .. curr_dir .. utils.path_separator .. file
+        end
         if result:sub(-1) ~= " " then
             result = result .. " "
         end

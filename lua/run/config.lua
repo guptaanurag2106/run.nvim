@@ -78,6 +78,14 @@ local defaults = {
             command = "go run %f",
             description = "Runs Go file"
         },
+        [".rs"] = {
+            command = "rustc %f -o a.out && ./a.out",
+            description = "Compiles and runs Rust file"
+        },
+        [".zig"] = {
+            command = "zig run %f",
+            description = "Runs Zig file"
+        },
         [".c"] = {
             command = "gcc %f -o a.out && ./a.out",
             description = "Compiles and runs C file"

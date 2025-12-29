@@ -54,7 +54,7 @@ your filesystem within Neovim and want to perform operations on the files you're
 ```lua
 {
     "guptaanurag2106/run.nvim",
-    dependencies = { 'nvim-lua/plenary.nvim' }
+    dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
             require("run").setup({})
     end,
@@ -66,7 +66,7 @@ your filesystem within Neovim and want to perform operations on the files you're
 ```lua
 use {
     "guptaanurag2106/run.nvim",
-    requires = { {'nvim-lua/plenary.nvim'} }
+    requires = { {'nvim-lua/plenary.nvim'} },
     config = function()
             require("run").setup({})
     end
@@ -114,10 +114,10 @@ require("run").setup({
   current_browser = "oil",
   
   -- Ask for confirmation before executing commands
-  ask_confirmation = false,
+  ask_confirmation = true,
   
-  -- open_cmd, default is xdg-open for linux, open for macos, start in windows
-  open_cmd = 'xdg-open'
+  -- open_cmd, default is auto-detected based on OS
+  open_cmd = nil,
   
   -- Auto-populate quickfix list with command output for sync commands
   populate_qflist_sync = false,
@@ -138,7 +138,7 @@ require("run").setup({
   default_actions = {
     -- Example: custom Python command
     [".py"] = {
-      command = "python -m %f",
+      command = "python %f",
       description = "Run Python module"
     },
     -- Add your own commands here
@@ -150,7 +150,7 @@ require("run").setup({
       end
 
        for _, file in ipairs(file_list) do
-           i file == "go.mod" or file == "go.sum" then
+           if file == "go.mod" or file == "go.sum" then
                return "go run .", false
            end
        end
@@ -190,7 +190,7 @@ Run.nvim uses a simple placeholder system for paths:
 
 - `%f` - All file/folder names, space-separated
 - `%d` - Current directory path
-- `%1`, `%2`, etc. - Individual file/folder names
+- `%1`, `%2`, etc. - Individual file/folder names (includes extension)
 - `%d/%f` - Full paths for all files
 - `%%` - Literal % character (For commands that need things like %1, sed for e.g.)
 - `{open}` - System-specific open command
@@ -199,24 +199,26 @@ Run.nvim uses a simple placeholder system for paths:
 
 Run.nvim comes with sensible defaults for common file types:
 
-- **Python** (`.py`): Runs with Python interpreter
+- **Python** (`.py`): `python %f`
 - **Bash/Shell** (`.sh`, `.bash`): Executes scripts
-- **Archives** (`.tar.gz`): Extract to current directory
-- **JavaScript** (`.js`): Runs with Node.js
-- **Java** (`.java`, `.jar`): Compiles and runs Java files
-- **C/C++** (`.c`, `.cpp`): Compiles source files
+- **Archives** (`.tar.gz`, `.zip`): Extracts to current directory
+- **Go** (`.go`): `go run %f`
+- **Rust** (`.rs`): `rustc %f -o a.out && ./a.out`
+- **Zig** (`.zig`): `zig run %f`
+- **JavaScript/TypeScript** (`.js`, `.ts`): Runs with Node.js/ts-node
+- **Java** (`.java`, `.jar`): Compiles and runs Java files or runs JARs
+- **C/C++** (`.c`, `.cpp`): Compiles source files and runs `a.out`
 - **Markdown** (`.md`): Converts to HTML with pandoc
+- **JSON/CSV**: Pretty-prints JSON with `jq` or displays CSV with `column`
 - **Media** (`.mp4`, `.mp3`): Opens with VLC
-- **Web** (`.html`): Opens in default browser
-- **And some more...**
+- **Web/PDF** (`.html`, `.pdf`): Opens in default viewer/browser
 
 - Special Types
-    * *no_extension*: When the file has no_extension, the default suggestion is `chmod +x`
-    * *dir*: When the selected entry is a directory, the default suggestion is to create a `.tar.gz`
-    * *multiple*: When a combination of different file/folder types is selected, 
-        the suggestion is to create a `.tar.gz`
-    * *default*: When none of the above categories can be inferred, the default suggestion
-        is to open it (`open` in macos, `xdg-open` in linux, `start` for windows this can be customized in `setup` function)
+    * *no_extension*: Default suggestion is `chmod +x %f`
+    * *dir*: Default suggestion is to create a `.tar.gz`
+    * *exe*: Runs the file (e.g., `./%1`)
+    * *multiple*: Suggestion is to create a `.tar.gz` for all selected items
+    * *default*: Suggestion is to open it (auto-detects `open`, `xdg-open`, or `start`)
 
 You can override any of these or add your own in the configuration.
 
