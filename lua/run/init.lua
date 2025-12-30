@@ -26,12 +26,11 @@ M.setup         = function(opts)
     end, { desc = "Run `command` on selected/hovered files", range = true })
 end
 
-
 ---Run command on the selected file list
 ---@param range table Range of selection (from user_command `command` params)
 ---@param async boolean Run command in async mode or not
 ---@return nil
-M.runfile = function(range, async)
+M.runfile       = function(range, async)
     local bufnr = vim.api.nvim_get_current_buf()
 
     local default_command = "{open} %f"
@@ -80,17 +79,17 @@ M.runfile = function(range, async)
         end
     end
 
-    local suggestion_hist = ""
+    local suggestion_hist = {}
     local history = {}
 
     if config.options.history ~= nil and config.options.history.enable then
         ok, suggestion_hist, history = pcall(M._get, default_command, config.options.history.history_file)
         if ok then
             if not suggestion_hist then
-                suggestion_hist = ""
+                suggestion_hist = {}
             end
         else
-            suggestion_hist = ""
+            suggestion_hist = {}
             history = {}
         end
     end
@@ -104,11 +103,19 @@ M.runfile = function(range, async)
     local input
     local done = false
 
-    vim.ui.input({ prompt = prompt, default = suggestion_hist, completion = "file_in_path" }, function(inp)
-        input = inp
-        done = true
-    end)
+    local default_suggestion = ""
+    if #suggestion_hist > 0 then
+        default_suggestion = suggestion_hist[#suggestion_hist]
+    end
+
+    vim.ui.input(
+        { prompt = prompt, default = default_suggestion, completion = "file" },
+        function(inp)
+            input = inp
+            done = true
+        end)
     vim.wait(10000, function() return done end)
+
     -- input = vim.fn.input(prompt, suggestion_hist, "file")
     local command = ""
     if not input then
@@ -129,12 +136,12 @@ M.runfile = function(range, async)
     if config.options.ask_confirmation then
         while true do
             local message = ("Run [" .. command .. "] (Y/n): ")
-            execute = vim.fn.input(message)
+            local response = vim.fn.input(message)
 
-            if execute:lower() == "y" or execute:lower() == "Y" or string.len(execute) == 0 then
+            if response:lower() == "y" or response:lower() == "Y" or string.len(response) == 0 then
                 execute = true
                 break
-            elseif execute:lower() == "n" or execute:lower() == "N" then
+            elseif response:lower() == "n" or response:lower() == "N" then
                 execute = false
                 break
             else
@@ -149,7 +156,7 @@ M.runfile = function(range, async)
     end
 
     if config.options.history ~= nil and config.options.history.enable then
-        if default_command ~= input then
+        if default_command ~= input and default_suggestion ~= input and string.len(input) ~= 0 then
             M._save(default_command, input, config.options.history.history_file, history) -- Key is command (deterministic) and user choice is input (from prompt)
         end
     end
@@ -158,6 +165,7 @@ M.runfile = function(range, async)
     if async then
         local job_id = run.run_async(command, curr_dir, config.options.populate_qflist_async,
             config.options.open_qflist_async)
+        _ = job_id
     else
         print("\n")
         run.run_sync(command, curr_dir, config.options.populate_qflist_sync,
@@ -305,9 +313,12 @@ end
 ---get last user prompt for given command
 ---@param key string the command determined from default_actions
 ---@param path string the history file path
----@return string, table
+---@return table, table
 M._get = function(key, path)
     local history = vim.json.decode(Path:new(path):read())
+    if type(history[key]) == "string" then
+        history[key] = { history[key] }
+    end
     return history[key], history
 end
 
@@ -318,7 +329,16 @@ end
 ---@param history table the old history, (_save will modify it)
 ---@return nil
 M._save = function(key, value, path, history)
-    history[key] = value
+    if history[key] == nil then
+        history[key] = {}
+    end
+
+    table.insert(history[key], value)
+
+    while #history[key] > 20 do
+        table.remove(history[key], 1)
+    end
+
     Path:new(path):write(vim.fn.json_encode(history), "w")
 end
 
