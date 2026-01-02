@@ -8,7 +8,7 @@ if M.is_windows == true then
 end
 
 M.get_open_command = function()
-    local is_macos = vim.fn.has('mac') == 1
+    local is_macos = vim.fn.has("mac") == 1
 
     if M.is_windows then
         return "start"
@@ -60,7 +60,7 @@ end
 ---@param suffix string
 ---@return boolean
 M.ends_with = function(str, suffix)
-    return str:sub(- #suffix) == suffix
+    return str:sub(-#suffix) == suffix
 end
 
 --- Get the file extension from a given filename.

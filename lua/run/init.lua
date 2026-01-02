@@ -1,12 +1,12 @@
-local Path      = require("plenary.path")
+local Path = require("plenary.path")
 local _browsers = require("run.browsers")
-local config    = require("run.config")
-local utils     = require("run.utils")
-local run       = require("run.run")
+local config = require("run.config")
+local utils = require("run.utils")
+local run = require("run.run")
 
-local M         = {}
+local M = {}
 
-M.setup         = function(opts)
+M.setup = function(opts)
     config.setup(opts)
     _browsers.set_current_browser(config.options.current_browser)
 
@@ -30,22 +30,22 @@ end
 ---@param range table Range of selection (from user_command `command` params)
 ---@param async boolean Run command in async mode or not
 ---@return nil
-M.runfile       = function(range, async)
+M.runfile = function(range, async)
     local bufnr = vim.api.nvim_get_current_buf()
 
     local default_command = "{open} %f"
     local need_completion = true
-    local skip_get_command = false;
-    local out_of_browser = false;
+    local skip_get_command = false
+    local out_of_browser = false
 
     local ok, file_list = pcall(M._get_current_files, range, bufnr)
     if not ok or file_list == nil then
         -- print("Cannot get current files. Please ensure you are in the file browser: " ..
         --     config.options.current_browser .. "\n" .. file_list)
         -- return
-        default_command = ""; -- Default incase using from somewhere else
+        default_command = "" -- Default incase using from somewhere else
         file_list = {}
-        out_of_browser = true;
+        out_of_browser = true
     end
 
     local ok1, curr_dir = pcall(M._get_current_dir, bufnr)
@@ -53,9 +53,9 @@ M.runfile       = function(range, async)
         -- print("Cannot get current directory. Please ensure you are in the file browser: " ..
         --     config.options.current_browser .. "\n" .. curr_dir)
         -- return
-        default_command = ""; -- Default incase using from somewhere else
+        default_command = "" -- Default incase using from somewhere else
         curr_dir = ""
-        out_of_browser = true;
+        out_of_browser = true
     end
 
     for i, file in ipairs(file_list) do
@@ -65,8 +65,8 @@ M.runfile       = function(range, async)
     end
 
     if not out_of_browser and not skip_get_command and config.options.action_function ~= nil then
-        local ok, action_function_command, func_need_completion = pcall(config.options.action_function, file_list,
-            curr_dir)
+        local ok, action_function_command, func_need_completion =
+            pcall(config.options.action_function, file_list, curr_dir)
         if ok and action_function_command ~= nil then
             default_command = action_function_command
             need_completion = func_need_completion
@@ -93,7 +93,6 @@ M.runfile       = function(range, async)
             history = {}
         end
     end
-
 
     local prompt = "[Run (Default: " .. default_command .. ") on " .. table.concat(file_list, ", ") .. "]: "
     if out_of_browser then
@@ -163,8 +162,8 @@ M.runfile       = function(range, async)
 
     -- Run `input`
     if async then
-        local job_id = run.run_async(command, curr_dir, config.options.populate_qflist_async,
-            config.options.open_qflist_async)
+            local job_id =
+                run.run_async(command, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
         _ = job_id
     else
         print("\n")
@@ -172,7 +171,6 @@ M.runfile       = function(range, async)
             config.options.open_qflist_sync)
     end
 end
-
 
 --------------------------------------------------------
 ---HELPER FUNCTIONS
@@ -231,7 +229,6 @@ M._get_selected_type = function(curr_dir, file_list)
     return type
 end
 
-
 ---Fill values for `%f`, `%1`, `%d`
 ---If you want to use %.. for some other purpose escape `%` with `%%`. All `%%` will be replaced by `%`
 ---Add `%d/%f` at end if no %.. found
@@ -243,7 +240,6 @@ M._fill_input = function(input, curr_dir, file_list)
     -- Flag to track if any placeholder was found
     local placeholder_found = false
     local result = input
-
 
     -- Replace numbered placeholders surrounded by spaces " %1 ", " %2 ", etc.
     for i, file in ipairs(file_list) do
@@ -308,7 +304,6 @@ M._fill_input = function(input, curr_dir, file_list)
 
     return result
 end
-
 
 ---get last user prompt for given command
 ---@param key string the command determined from default_actions
@@ -376,7 +371,6 @@ end
 M.set_current_browser = function(browser_name)
     _browsers.set_current_browser(string.lower(browser_name))
 end
-
 
 --------------------------------------------------------
 ---Internal Functions, not needed to be used by the user

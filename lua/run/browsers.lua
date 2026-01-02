@@ -21,7 +21,7 @@ M.browsers["oil"] = {
             --Manually get line numbers
             -- Get mode
             local mode = vim.api.nvim_get_mode().mode
-            if mode == 'v' or mode == 'V' or mode == '\22' then
+            if mode == "v" or mode == "V" or mode == "\22" then
                 local start_pos = vim.fn.getpos("'<")
                 local end_pos = vim.fn.getpos("'>")
                 local start_line = start_pos[2]
@@ -50,7 +50,7 @@ M.browsers["oil"] = {
     get_current_dir = function(bufnr)
         local dir = require("oil").get_current_dir(bufnr)
         return dir
-    end
+    end,
 }
 
 ---Register get_current_files, get_current_dir functions for a browser

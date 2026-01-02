@@ -24,7 +24,7 @@ local parse_qf_list = function(data)
                         filename = filename,
                         lnum = lnum,
                         col = col,
-                        text = message
+                        text = message,
                     }
 
                     table.insert(entries, entry)
@@ -41,7 +41,7 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     -- Using newer vim.system API (Neovim 0.10+)
     local opts = {
         detach = false,
-        cwd = curr_dir
+        cwd = curr_dir,
     }
 
     local ok, result = pcall(function()
@@ -67,7 +67,7 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
 
     if open_qflist then
-        vim.cmd('copen')
+        vim.cmd("copen")
     end
 end
 
@@ -102,8 +102,7 @@ local create_reuse_win = function(window_name)
 
     local existing_win
     for _, win in ipairs(vim.api.nvim_list_wins()) do
-        if vim.api.nvim_win_is_valid(win)
-            and vim.api.nvim_win_get_buf(win) == buf then
+        if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
             existing_win = win
             break
         end
@@ -152,16 +151,13 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         "",
         "Output",
         "--------------------------------------------------------------------------------",
-        ""
+        "",
     })
 
     local ns_id = vim.api.nvim_create_namespace("")
 
-
-    vim.hl.range(buf, ns_id, "Title", { 0, 0 }, { 0, -1 },
-        { inclusive = true })
-    vim.hl.range(buf, ns_id, "Special", { 2, 0 }, { 2, -1 },
-        { inclusive = true })
+    vim.hl.range(buf, ns_id, "Title", { 0, 0 }, { 0, -1 }, { inclusive = true })
+    vim.hl.range(buf, ns_id, "Special", { 2, 0 }, { 2, -1 }, { inclusive = true })
 
     local qf_list = {}
     local start_time = vim.uv.hrtime()
@@ -218,8 +214,14 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                 end
                 vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
 
-                vim.hl.range(buf, ns_id, "ErrorMsg", { line_count - 1, 0 }, { line_count + #data - 1, -1 },
-                    { inclusive = true })
+                vim.hl.range(
+                    buf,
+                    ns_id,
+                    "ErrorMsg",
+                    { line_count - 1, 0 },
+                    { line_count + #data - 1, -1 },
+                    { inclusive = true }
+                )
 
                 if vim.api.nvim_win_is_valid(win) then
                     vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
@@ -242,20 +244,30 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
 
                     local line_count = vim.api.nvim_buf_line_count(buf)
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
-                        exit_code == 0
-                        and "Status: Completed Successfully (exit code 0)"
-                        or "Status: Failed (exit code " .. exit_code .. ")"
+                        exit_code == 0 and "Status: Completed Successfully (exit code 0)"
+                            or "Status: Failed (exit code " .. exit_code .. ")",
                     })
-                    vim.hl.range(buf, ns_id, exit_code == 0 and 'String' or 'ErrorMsg', { line_count, 0 },
+                    vim.hl.range(
+                        buf,
+                        ns_id,
+                        exit_code == 0 and "String" or "ErrorMsg",
+                        { line_count, 0 },
                         { line_count, -1 },
-                        { inclusive = true })
+                        { inclusive = true }
+                    )
 
                     vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + 1, false, {
                         "",
-                        string.format("Command finished in %d.%03d seconds. Press 'q' to exit", seconds, milliseconds)
+                        string.format("Command finished in %d.%03d seconds. Press 'q' to exit", seconds, milliseconds),
                     })
-                    vim.hl.range(buf, ns_id, "Comment", { line_count + 1, 0 }, { line_count + 2, -1 },
-                        { inclusive = true })
+                    vim.hl.range(
+                        buf,
+                        ns_id,
+                        "Comment",
+                        { line_count + 1, 0 },
+                        { line_count + 2, -1 },
+                        { inclusive = true }
+                    )
                     if vim.api.nvim_win_is_valid(win) then
                         vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
                     end
@@ -268,19 +280,19 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                     vim.fn.setqflist(parse_qf_list(qf_list), "r")
                 end
                 if exit_code ~= 0 and open_qflist then
-                    local ok, trouble = pcall(require, 'trouble')
+                    local ok, trouble = pcall(require, "trouble")
                     if ok then
                         -- Open Trouble quickfix view
-                        trouble.open('quickfix')
+                        trouble.open("quickfix")
                     else
                         -- Fallback to the normal quickfix window
-                        vim.cmd('copen')
+                        vim.cmd("copen")
                     end
                 end
             end)
         end,
         stdout_buffered = false,
-        stderr_buffered = false
+        stderr_buffered = false,
     })
 
     if job_id <= 0 then
@@ -290,13 +302,13 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
     M.job_id = job_id
 
-    vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':lua require("run")._stop_job(' .. M.job_id .. ') vim.cmd("q")<CR>', {
+    vim.api.nvim_buf_set_keymap(buf, "n", "q", ':lua require("run")._stop_job(' .. M.job_id .. ') vim.cmd("q")<CR>', {
         noremap = true,
-        silent = true
+        silent = true,
     })
-    vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':lua require("run")._stop_job(' .. M.job_id .. ')<CR>', {
+    vim.api.nvim_buf_set_keymap(buf, "n", "<C-c>", ':lua require("run")._stop_job(' .. M.job_id .. ")<CR>", {
         noremap = true,
-        silent = true
+        silent = true,
     })
     return M.job_id
 end
