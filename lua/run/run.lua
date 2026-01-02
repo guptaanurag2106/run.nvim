@@ -1,6 +1,10 @@
 local utils = require("run.utils")
+local config = require("run.config")
 local M = {}
 
+---Stop a running job by id.
+---@param job_id number the job id returned by `jobstart`
+---@return nil
 M.stop_job = function(job_id)
     if job_id and job_id > 0 then
         pcall(vim.fn.jobstop, job_id)
@@ -8,6 +12,9 @@ M.stop_job = function(job_id)
     M.job_id = nil
 end
 
+---Parse lines of text into quickfix entries.
+---@param data table Array of text blocks (stdout/stderr lines)
+---@return table list of quickfix-style entries {filename, lnum, col, text}
 local parse_qf_list = function(data)
     local entries = {}
 
@@ -15,7 +22,7 @@ local parse_qf_list = function(data)
         if block then
             local lines = vim.split(block, "\n")
             for _, line in ipairs(lines) do
-                local filename, lnum, col, message = string.match(line, "(.-):(%d+):(%d+):(.*)")
+                local filename, lnum, col, message = string.match(line, "^(.*):(%d+):(%d+):(.*)$")
                 if filename and lnum and col then
                     lnum = tonumber(lnum)
                     col = tonumber(col)
@@ -36,6 +43,12 @@ local parse_qf_list = function(data)
     return entries
 end
 
+---Run a command synchronously using `vim.system`.
+---@param cmd string|table command or list of args
+---@param curr_dir string working directory
+---@param populate_qflist boolean whether to populate quickfix from output
+---@param open_qflist boolean whether to open quickfix on failure
+---@return nil
 M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     local cmd_list = utils.split(cmd, " ")
     -- Using newer vim.system API (Neovim 0.10+)
@@ -87,6 +100,9 @@ end
 --     end)
 -- end
 
+---Create or reuse an output buffer/window for command output.
+---@param window_name string buffer name to use
+---@return number buf, number win
 local create_reuse_win = function(window_name)
     local orig_win = vim.api.nvim_get_current_win()
     local buf = vim.fn.bufnr(window_name)
@@ -112,7 +128,7 @@ local create_reuse_win = function(window_name)
     if existing_win then
         win = existing_win
     else
-        vim.cmd("botright 15split")
+        vim.cmd(config.options.output_window_cmd)
         win = vim.api.nvim_get_current_win()
         vim.api.nvim_win_set_buf(win, buf)
     end
@@ -133,6 +149,12 @@ end
 M.job_id = nil
 
 M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
+    ---Run a command asynchronously using `jobstart` and stream output to buffer.
+    ---@param cmd string command to run
+    ---@param curr_dir string working directory
+    ---@param populate_qflist boolean whether to collect output for quickfix
+    ---@param open_qflist boolean whether to open quickfix on failure
+    ---@return number|nil job id if started, otherwise nil
     if M.job_id ~= nil then
         vim.notify("A command is already running. Please stop it before starting a new one.", vim.log.levels.WARN)
         -- M.stop_job(M.job_id)

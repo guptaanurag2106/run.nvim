@@ -43,8 +43,14 @@ Example configuration with default values:
         open_qflist_async = false, --open qflist after finishing (for async)
         history = {
             enable = true,
-            history_file = vim.fn.stdpath("data") .. "/run.nvim.json"
+            -- history file location uses the platform path separator
+            history_file = vim.fn.stdpath("data") .. require("run.utils").path_separator .. "run.nvim.json"
         },
+        ui = {
+            border = "none",
+            prompt_hl = "Constant",
+        },
+        output_window_cmd = "botright 15split",
         default_actions = {
             -- ... see detailed default actions below
         },
@@ -139,6 +145,9 @@ Example configuration with default values:
 *populate_qflist_async*       Boolean (default: true)
     Whether to populate quickfix list for asynchronous commands.
     If trouble.nvim is installed, it will be used to open the list.
+    Note: when `open_qflist_async` is true the quickfix/trouble window is
+    opened only for non-zero exit codes (failures) — this avoids opening the
+    quickfix on successful runs unless explicitly requested.
 
 *open_qflist_sync*            Boolean (default: false)
     Whether to open quickfix list after synchronous commands.
@@ -148,6 +157,10 @@ Example configuration with default values:
 
 *history.enable*              Boolean (default: true)
     Whether to enable command history.
+
+*history size*                Integer (internal: 20)
+    The plugin keeps up to 20 entries per command key in history. Old
+    entries are pruned automatically.
 
 *history.history_file*        String
     Path to file for storing command history.
@@ -198,7 +211,7 @@ with actual paths:
 *%d*               Current directory path
 *%1*, *%2*, etc.    Individual file/folder names (numbered, includes extension)
 *%d/%f*            Full paths for all files (equivalent to directory + filename)
-*%%*               Literal % character
+*%%*               Literal % character (escape percent by using `%%`)
 *{open}*           System-specific open command (xdg-open, open, start)
 
 If no placeholder is found in a command, the plugin automatically appends full
@@ -245,6 +258,10 @@ other file browsers by implementing and registering two functions:
 
 1. get_current_files - Returns a list of selected file names (not full paths)
 2. get_current_dir - Returns the current directory path
+
+Registering adapters: `require("run").register` will create a browser slot
+if it does not already exist, so you can register new browser adapters at
+runtime (the function will initialize the internal table for that browser).
 
 Example for integrating with a custom file browser:
 >lua

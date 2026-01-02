@@ -5,7 +5,9 @@ local utils = require("run.utils")
 local run = require("run.run")
 
 local M = {}
-
+---Setup the plugin with user-provided options.
+---@param opts table User configuration overrides
+---@return nil
 M.setup = function(opts)
     config.setup(opts)
     _browsers.set_current_browser(config.options.current_browser)
@@ -99,76 +101,84 @@ M.runfile = function(range, async)
         prompt = "[Run]: "
     end
 
-    local input
-    local done = false
-
-    local default_suggestion = ""
+    local ui_history = {}
     if #suggestion_hist > 0 then
-        default_suggestion = suggestion_hist[#suggestion_hist]
+        for i = 1, #suggestion_hist - 1 do
+            table.insert(ui_history, suggestion_hist[i])
+        end
     end
 
-    vim.ui.input(
-        { prompt = prompt, default = default_suggestion, completion = "file" },
-        function(inp)
-            input = inp
-            done = true
-        end)
-    vim.wait(10000, function() return done end)
+    local default_suggestion = suggestion_hist[#suggestion_hist] or default_command
 
-    -- input = vim.fn.input(prompt, suggestion_hist, "file")
-    local command = ""
-    if not input then
-        return
-    elseif string.len(input) == 0 then
-        command = default_command
-    else
-        command = input
-        need_completion = true --TODO:pass in commands that don't need completion (`make`)
-    end
+    local on_confirm = function(input)
+        -- Continue execution inside callback since it's async
+        if not input then
+            return
+        end
 
-    if not out_of_browser and need_completion then
-        command = M._fill_input(command, curr_dir, file_list)
-    end
-    command = command:gsub("%s+", " ")
+        local command = ""
+        if string.len(input) == 0 then
+            command = default_command
+        else
+            command = input
+            need_completion = true --TODO:pass in commands that don't need completion (`make`)
+        end
 
-    local execute = true
-    if config.options.ask_confirmation then
-        while true do
-            local message = ("Run [" .. command .. "] (Y/n): ")
-            local response = vim.fn.input(message)
+        if not out_of_browser and need_completion then
+            command = M._fill_input(command, curr_dir, file_list)
+        end
+        command = command:gsub("%s+", " ")
 
-            if response:lower() == "y" or response:lower() == "Y" or string.len(response) == 0 then
-                execute = true
-                break
-            elseif response:lower() == "n" or response:lower() == "N" then
-                execute = false
-                break
-            else
-                print("\nInvalid input. Please enter 'y' or 'n'.")
+        local execute = true
+        if config.options.ask_confirmation then
+            while true do
+                local message = ("Run [" .. command .. "] (Y/n): ")
+                local response = vim.fn.input(message)
+
+                if response:lower() == "y" or response:lower() == "Y" or string.len(response) == 0 then
+                    execute = true
+                    break
+                elseif response:lower() == "n" or response:lower() == "N" then
+                    execute = false
+                    break
+                else
+                    print("\nInvalid input. Please enter 'y' or 'n'.")
+                end
             end
         end
-    end
 
-    if not execute then
-        vim.notify("\nCancelled", vim.log.levels.ERROR)
-        return
-    end
+        if not execute then
+            vim.notify("\nCancelled", vim.log.levels.ERROR)
+            return
+        end
 
-    if config.options.history ~= nil and config.options.history.enable then
-        if default_command ~= input and default_suggestion ~= input and string.len(input) ~= 0 then
-            M._save(default_command, input, config.options.history.history_file, history) -- Key is command (deterministic) and user choice is input (from prompt)
+        if config.options.history ~= nil and config.options.history.enable then
+            if default_command ~= input and default_suggestion ~= input and string.len(input) ~= 0 then
+                M._save(default_command, input, config.options.history.history_file, history) -- Key is command (deterministic) and user choice is input (from prompt)
+            end
+        end
+
+        -- Run `input`
+        if async then
+            local job_id =
+                run.run_async(command, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
+            _ = job_id
+        else
+            print("\n")
+            run.run_sync(command, curr_dir, config.options.populate_qflist_sync, config.options.open_qflist_sync)
         end
     end
 
-    -- Run `input`
-    if async then
-            local job_id =
-                run.run_async(command, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
-        _ = job_id
+    -- Use custom UI or standard vim.ui.input
+    if config.options.use_custom_ui then
+        require("run.ui").input({
+            prompt = prompt,
+            default = default_suggestion,
+            history = ui_history,
+            cwd = curr_dir,
+        }, on_confirm)
     else
-        print("\n")
-        run.run_sync(command, curr_dir, config.options.populate_qflist_sync,
-            config.options.open_qflist_sync)
+        vim.ui.input({ prompt = prompt, default = default_suggestion, completion = "file" }, on_confirm)
     end
 end
 
@@ -232,10 +242,11 @@ end
 ---Fill values for `%f`, `%1`, `%d`
 ---If you want to use %.. for some other purpose escape `%` with `%%`. All `%%` will be replaced by `%`
 ---Add `%d/%f` at end if no %.. found
+---Format command input by replacing placeholders with actual paths/names.
 ---@param input string User input command
 ---@param curr_dir string current directory
----@param file_list table file list (just names not full paths)
----@return string formmated user input
+---@param file_list table file list (names only, not full paths)
+---@return string formmatted user input
 M._fill_input = function(input, curr_dir, file_list)
     -- Flag to track if any placeholder was found
     local placeholder_found = false
@@ -272,7 +283,7 @@ M._fill_input = function(input, curr_dir, file_list)
 
     -- Replace %d with current directory path
     if result:match("%%d") then
-        result = result:gsub("%%d", curr_dir)
+        result = result:gsub("%%%%", "%%")
         placeholder_found = true
     end
 
@@ -306,18 +317,33 @@ M._fill_input = function(input, curr_dir, file_list)
 end
 
 ---get last user prompt for given command
+---Retrieve history entries for a given key from history file.
 ---@param key string the command determined from default_actions
 ---@param path string the history file path
----@return table, table
+---@return table|nil, table history list for key (or nil) and full history table
 M._get = function(key, path)
-    local history = vim.json.decode(Path:new(path):read())
-    if type(history[key]) == "string" then
-        history[key] = { history[key] }
+    local p = Path:new(path)
+    local history = {}
+    if p:exists() then
+        local ok, content = pcall(function()
+            return p:read()
+        end)
+        if ok and content and #content > 0 then
+            local ok2, decoded = pcall(vim.json.decode, content)
+            if ok2 and type(decoded) == "table" then
+                history = decoded
+            end
+        end
     end
-    return history[key], history
+    local val = history[key]
+    if type(val) == "string" then
+        val = { val }
+    end
+    return val, history
 end
 
 ---save user prompt for given command
+---Save a user-entered command into history for a given key.
 ---@param key string the command determined from default_actions
 ---@param value string user command for the given prompt
 ---@param path string the history file path
@@ -326,6 +352,11 @@ end
 M._save = function(key, value, path, history)
     if history[key] == nil then
         history[key] = {}
+    end
+
+    -- If history is empty, save the default command (key) first so it is preserved
+    if #history[key] == 0 then
+        table.insert(history[key], key)
     end
 
     table.insert(history[key], value)
@@ -342,6 +373,7 @@ end
 --------------------------------------------------------
 
 ---Checks if a str ends with a suffix or not (useful for file extensions)
+---Return true if `str` ends with `suffix`.
 ---@param str string
 ---@param suffix string
 ---@return boolean true if str ends with suffix
@@ -398,6 +430,5 @@ end
 
 return M
 
---TODO:Weird escape behaviour on first Run (Default:...) Prompt
 --TODO:no need for fill input
---TODO:multiple action per file (options)
+--TODO:multiple action per file (options) add to config

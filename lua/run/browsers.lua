@@ -1,5 +1,4 @@
 local M = {}
-local util = require("run.utils")
 
 M.browsers = {}
 
@@ -54,23 +53,27 @@ M.browsers["oil"] = {
 }
 
 ---Register get_current_files, get_current_dir functions for a browser
----@param browser_name string The name of the browser e.g. oil/netrw etc.
----@param func_name string The name of the function either get_current_files/get_current_dir
----@param func function func_name functions for the `browser_name`
+---Register adapter functions for a browser implementation.
+---@param browser_name string The name of the browser e.g. oil/netrw
+---@param func_name string Either 'get_current_files' or 'get_current_dir'
+---@param func function The implementation function
+---@return nil
 M.register = function(browser_name, func_name, func)
     if func_name ~= "get_current_files" and func_name ~= "get_current_dir" then
         error("Can't set function " .. func_name)
     end
-    if browser_name ~= nil and string.len(browser_name) ~= 0 then
-        M.browsers[browser_name][func_name] = func
-    else
+    if not browser_name or string.len(browser_name) == 0 then
         error("Browser Name cannot be empty")
     end
+    -- ensure browser table exists so callers can register new browsers
+    M.browsers[browser_name] = M.browsers[browser_name] or {}
+    M.browsers[browser_name][func_name] = func
 end
 
 ---Sets the current browser in use
 ---The functions should be implemented first. See `register(browser_name, func_name, func)`
 ---@param browser_name string The name of the browser you want to set as current
+---@return nil
 M.set_current_browser = function(browser_name)
     if M.browsers and M.browsers[browser_name] then
         M.current_browser = browser_name
@@ -82,7 +85,7 @@ end
 ---Gets current file names under cursor/selection using the `current_browser`
 ---@param range table Range of selection (from user_command `command` params)
 ---@param bufnr integer The buffer number
----@return table|nil
+---@return table|nil list of filenames or nil on error
 M.get_current_files = function(range, bufnr)
     local browser = M.browsers[M.current_browser]
     if not browser then
@@ -104,7 +107,7 @@ end
 
 ---Gets current open directory in the `current_browser`
 ---@param bufnr integer The buffer number
----@return string|nil
+---@return string|nil current directory or nil on error
 M.get_current_dir = function(bufnr)
     local browser = M.browsers[M.current_browser]
     if not browser then

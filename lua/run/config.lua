@@ -1,11 +1,17 @@
 local utils = require("run.utils")
+local types = require("run.types")
 local M = {}
 
 local defaults = {
     current_browser = "oil",
     ask_confirmation = true,
     use_custom_ui = true,
-    open_cmd = utils.get_open_command(),
+    ui = {
+        border = "none",
+        prompt_hl = "Constant",
+    },
+    output_window_cmd = "botright 15split",
+    open_cmd = nil,
     populate_qflist_sync = false,
     populate_qflist_async = true,
     open_qflist_sync = false,
@@ -145,6 +151,11 @@ local defaults = {
 
 M.setup = function(opts)
     M.options = vim.tbl_deep_extend("force", {}, defaults, opts or {})
+    local ok, err = types.validate_config(M.options)
+    if not ok then
+        vim.notify("run.nvim: invalid config - " .. tostring(err), vim.log.levels.ERROR)
+        -- continue with merged options but notify the user
+    end
     if M.options.open_cmd == nil or M.options.open_cmd:len() == 0 then
         M.options.open_cmd = utils.get_open_command()
     end

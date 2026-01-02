@@ -8,6 +8,8 @@ if M.is_windows == true then
 end
 
 M.get_open_command = function()
+    ---Return a platform-appropriate 'open' command (`open`, `start`, `xdg-open`).
+    ---@return string
     local is_macos = vim.fn.has("mac") == 1
 
     if M.is_windows then
@@ -43,16 +45,37 @@ M.path_join = function(...)
         return ""
     end
 
-    local all_parts = {}
-    if type(args[1]) == "string" and args[1]:sub(1, 1) == M.path_separator then
-        all_parts[1] = ""
+    local function normalize_sep(s)
+        if not s then
+            return ""
+        end
+        if M.path_separator == "\\" then
+            return s:gsub("/", "\\")
+        else
+            return s:gsub("\\", "/")
+        end
     end
 
-    for _, arg in ipairs(args) do
-        local arg_parts = M.split(arg, M.path_separator)
-        vim.list_extend(all_parts, arg_parts)
+    local result = ""
+    for i, part in ipairs(args) do
+        part = normalize_sep(part)
+        if part == "" then
+            goto continue
+        end
+
+        if result == "" then
+            result = part
+        else
+            -- remove trailing separators from result
+            result = result:gsub(M.path_separator .. "+$", "")
+            -- remove leading separators from part
+            part = part:gsub("^" .. M.path_separator .. "+", "")
+            result = result .. M.path_separator .. part
+        end
+        ::continue::
     end
-    return table.concat(all_parts, M.path_separator)
+
+    return result
 end
 
 ---Check if string ends with suffix
@@ -64,11 +87,12 @@ M.ends_with = function(str, suffix)
 end
 
 --- Get the file extension from a given filename.
----@param filename string: The name of the file (including its extension).
----@return string|nil: The file extension, or nil if no extension exists.
+---Return the extension (text after the last dot) or nil when none.
+---@param filename string The name of the file (including its extension).
+---@return string|nil The file extension, or nil if no extension exists.
 M.get_file_extension = function(filename)
     if filename then
-        local dot_position = filename:find("%.")
+        local dot_position = filename:match(".*()%.")
         if dot_position then
             return filename:sub(dot_position + 1)
         end
@@ -76,6 +100,10 @@ M.get_file_extension = function(filename)
     return nil
 end
 
+---Append all elements from sourceTable into destinationTable.
+---@param destinationTable table
+---@param sourceTable table
+---@return table destinationTable
 M.appendTable = function(destinationTable, sourceTable)
     for i = 1, #sourceTable do
         table.insert(destinationTable, sourceTable[i])

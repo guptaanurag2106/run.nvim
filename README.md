@@ -1,5 +1,5 @@
 # Run.nvim
- 
+
 Run.nvim is a lightweight Neovim plugin that streamlines file operations within file explorers like Oil and netrw.
 Inspired by the convenience of Emacs’ Dired mode([dired-do-shell-command](https://www.gnu.org/software/emacs/manual/html_node/emacs/Shell-Commands-in-Dired.html)),
 Run.nvim lets you quickly execute common file commands (such as extracting archives, changing permissions, or running common file types)
@@ -8,41 +8,41 @@ directly from your file browser.
 You can simply select files (by placing your cursor on the line, or visual-select a list of files),
 call the plugin and run commands on those files
 
-
 https://github.com/user-attachments/assets/98fd5f4e-bbe5-434d-8d4d-b7f199cfc49a
-
 
 <!-- TOC -->
 
-- [Why Run.nvim](#why-runnvim)
-- [Installation](#installation)
-  - [Using lazy.nvim](#using-lazynvim)
-  - [Using packer.nvim](#using-packernvim)
-- [Quick Start](#quick-start)
-- [User Commands and Keymaps](#user-commands-and-keymaps)
-- [Features](#features)
-- [Configuration](#configuration)
-- [Using with Other File Browsers](#using-with-other-file-browsers)
-- [Command Placeholders](#command-placeholders)
-- [Default Actions](#default-actions)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
+-   [Why Run.nvim](#why-runnvim)
+-   [Installation](#installation)
+    -   [Using lazy.nvim](#using-lazynvim)
+    -   [Using packer.nvim](#using-packernvim)
+-   [Quick Start](#quick-start)
+-   [User Commands and Keymaps](#user-commands-and-keymaps)
+-   [Features](#features)
+-   [Configuration](#configuration)
+-   [Using with Other File Browsers](#using-with-other-file-browsers)
+-   [Command Placeholders](#command-placeholders)
+-   [Default Actions](#default-actions)
+-   [Documentation](#documentation)
+-   [Contributing](#contributing)
+-   [License](#license)
 
 <!-- /TOC -->
 
 ## Why Run.nvim
+
 When working in Neovim, you often need to perform various operations on files -
 running scripts, extracting archives, compiling code, or opening files with
 external applications.
 
-Run.nvim  makes these tasks easier by:
-- Providing sensible default commands based on file types (Not having to remember the exact commands)
-- Executing commands without leaving your editor
-- Running commands in the directory open in the browser (irrespective of `cwd`)
-- Displaying command output directly in Neovim in a separate buffer, to easily copy/modify the output
-- Supporting both synchronous and asynchronous execution options
-- Providing placeholder system ([Command Placeholders](#command-placeholders)) for easy typing
+Run.nvim makes these tasks easier by:
+
+-   Providing sensible default commands based on file types (Not having to remember the exact commands)
+-   Executing commands without leaving your editor
+-   Running commands in the directory open in the browser (irrespective of `cwd`)
+-   Displaying command output directly in Neovim in a separate buffer, to easily copy/modify the output
+-   Supporting both synchronous and asynchronous execution options
+-   Providing placeholder system ([Command Placeholders](#command-placeholders)) for easy typing
 
 The plugin is particularly useful for file browser workflows, where you're already navigating
 your filesystem within Neovim and want to perform operations on the files you're browsing.
@@ -78,31 +78,37 @@ use {
 1. Navigate to a file in your file browser ([oil.nvim](https://github.com/stevearc/oil.nvim) by default)
 2. For background execution with live output in a new buffer, use `:RunFile`
 3. Press `:RunFileSync` to run the appropriate command for that file type synchronously
+   Note: `:RunFile` uses a small custom floating input UI by default. You can fallback to `vim.ui.input` by setting `use_custom_ui = false` in the setup options.
 
 ## User Commands and Keymaps
+
 The plugin creates two user commands `RunFile`, `RunFileSync`. No keymaps are however
 created and it's left to the user. An example keymap could be as simple as
+
 ```lua
 vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFile<CR>", { desc = "(Run.nvim) Async" })
 ```
 
 ## Features
-- Quick File Detection:
-    * Retrieves the full path of the file or directory under the cursor with ease.
-- Predefined Commands:
-    * Offers a set of ready-to-use commands like tar extraction, chmod +x, xdg-open, and more.
-- Custom Actions:
-    * The plugin suggests a default command, you can change it by typing your own command (after the `[Run (Default: <cmd>) on <file>]:` and making use of ([Command Placeholders](#command-placeholders)).
-- Flexible Execution:
-    * Choose to run commands synchronously, asynchronously and populate the qflist with the output
-- Output Window
-    * Unbuffered output of asynchronous commands can be seen in a new popup window which opens at the bottom
-    * It support `q` to close and `<C-c>` to stop command execution
-    * The buffer is reused if multiple `:RunFile` are started
-- History
-    * If you provide a command other than default, it is saved to history and is suggested from then onwards for that filetype
-- Populating Quickfix List
-    * Based on the [config](#Configuration), the quickfix list is automatically parsed and populated which can be opened via [trouble.nvim](https://github.com/folke/trouble.nvim) or just `:copen`.
+
+-   Quick File Detection:
+    -   Retrieves the full path of the file or directory under the cursor with ease.
+-   Predefined Commands:
+    -   Offers a set of ready-to-use commands like tar extraction, chmod +x, xdg-open, and more.
+-   Custom Actions:
+    -   The plugin suggests a default command, you can change it by typing your own command (after the `[Run (Default: <cmd>) on <file>]:` and making use of ([Command Placeholders](#command-placeholders)).
+-   Flexible Execution:
+    -   Choose to run commands synchronously, asynchronously and populate the qflist with the output
+-   Output Window
+    -   Unbuffered output of asynchronous commands can be seen in a new popup window which opens at the bottom
+    -   It support `q` to close and `<C-c>` to stop command execution
+    -   The buffer is reused if multiple `:RunFile` are started
+-   History
+    -   If you provide a command other than default, it is saved to history and is suggested from then onwards for that filetype
+    -   History is stored as JSON in your `stdpath('data')` by default. The plugin keeps up to 20 entries per command key.
+-   Populating Quickfix List
+    -   Based on the [config](#Configuration), the quickfix list is automatically parsed and populated which can be opened via [trouble.nvim](https://github.com/folke/trouble.nvim) or just `:copen`.
+    -   Note: when configured to open the quickfix/trouble window, the plugin opens it only for non-zero (failing) exit codes by default to avoid noise on successful runs.
 
 ## Configuration
 
@@ -112,28 +118,38 @@ Run.nvim works out of the box, but you can customize it to fit your workflow:
 require("run").setup({
   -- File browser to use (default: "oil")
   current_browser = "oil",
-  
+
   -- Ask for confirmation before executing commands
   ask_confirmation = true,
-  
+
   -- open_cmd, default is auto-detected based on OS
   open_cmd = nil,
-  
+
   -- Auto-populate quickfix list with command output for sync commands
   populate_qflist_sync = false,
   -- Auto-populate quickfix list with command output for async commands
   populate_qflist_async = true,
-  
+
   -- Auto-open quickfix list with command output for sync commands
   open_qflist_sync = false,
   -- Auto-open quickfix list with command output for async commands
   open_qflist_async = false,
-  
+
   -- Enable command history
   history = {
     enable = true,
-    history_file = vim.fn.stdpath("data") .."/run.nvim.json"  },
-  
+        history_file = vim.fn.stdpath("data") .. require("run.utils").path_separator .. "run.nvim.json"
+  },
+
+  -- UI settings for custom input window
+  ui = {
+      border = "none",
+      prompt_hl = "Constant",
+  },
+
+  -- Command to open the output window
+  output_window_cmd = "botright 15split",
+
   -- Customize default actions for specific file types
   default_actions = {
     -- Example: custom Python command
@@ -188,39 +204,56 @@ require("run").set_current_browser("nvim-tree")
 
 Run.nvim uses a simple placeholder system for paths:
 
-- `%f` - All file/folder names, space-separated
-- `%d` - Current directory path
-- `%1`, `%2`, etc. - Individual file/folder names (includes extension)
-- `%d/%f` - Full paths for all files
-- `%%` - Literal % character (For commands that need things like %1, sed for e.g.)
-- `{open}` - System-specific open command
+-   `%f` - All file/folder names, space-separated
+-   `%d` - Current directory path
+-   `%1`, `%2`, etc. - Individual file/folder names (includes extension)
+-   `%d/%f` - Full paths for all files
+-   `%%` - Literal % character (For commands that need things like %1, sed for e.g.)
+-   `{open}` - System-specific open command
+
+Placeholder notes:
+
+-   Escape percent by using `%%` when you need a literal `%` in the final command.
+-   If no placeholder is detected, the plugin appends full file paths to the end of the command.
 
 ## Default Actions
 
 Run.nvim comes with sensible defaults for common file types:
 
-- **Python** (`.py`): `python %f`
-- **Bash/Shell** (`.sh`, `.bash`): Executes scripts
-- **Archives** (`.tar.gz`, `.zip`): Extracts to current directory
-- **Go** (`.go`): `go run %f`
-- **Rust** (`.rs`): `rustc %f -o a.out && ./a.out`
-- **Zig** (`.zig`): `zig run %f`
-- **JavaScript/TypeScript** (`.js`, `.ts`): Runs with Node.js/ts-node
-- **Java** (`.java`, `.jar`): Compiles and runs Java files or runs JARs
-- **C/C++** (`.c`, `.cpp`): Compiles source files and runs `a.out`
-- **Markdown** (`.md`): Converts to HTML with pandoc
-- **JSON/CSV**: Pretty-prints JSON with `jq` or displays CSV with `column`
-- **Media** (`.mp4`, `.mp3`): Opens with VLC
-- **Web/PDF** (`.html`, `.pdf`): Opens in default viewer/browser
+-   **Python** (`.py`): `python %f`
+-   **Bash/Shell** (`.sh`, `.bash`): Executes scripts
+-   **Archives** (`.tar.gz`, `.zip`): Extracts to current directory
+-   **Go** (`.go`): `go run %f`
+-   **Rust** (`.rs`): `rustc %f -o a.out && ./a.out`
+-   **Zig** (`.zig`): `zig run %f`
+-   **JavaScript/TypeScript** (`.js`, `.ts`): Runs with Node.js/ts-node
+-   **Java** (`.java`, `.jar`): Compiles and runs Java files or runs JARs
+-   **C/C++** (`.c`, `.cpp`): Compiles source files and runs `a.out`
+-   **Markdown** (`.md`): Converts to HTML with pandoc
+-   **JSON/CSV**: Pretty-prints JSON with `jq` or displays CSV with `column`
+-   **Media** (`.mp4`, `.mp3`): Opens with VLC
+-   **Web/PDF** (`.html`, `.pdf`): Opens in default viewer/browser
 
-- Special Types
-    * *no_extension*: Default suggestion is `chmod +x %f`
-    * *dir*: Default suggestion is to create a `.tar.gz`
-    * *exe*: Runs the file (e.g., `./%1`)
-    * *multiple*: Suggestion is to create a `.tar.gz` for all selected items
-    * *default*: Suggestion is to open it (auto-detects `open`, `xdg-open`, or `start`)
+-   Special Types
+    -   _no_extension_: Default suggestion is `chmod +x %f`
+    -   _dir_: Default suggestion is to create a `.tar.gz`
+    -   _exe_: Runs the file (e.g., `./%1`)
+    -   _multiple_: Suggestion is to create a `.tar.gz` for all selected items
+    -   _default_: Suggestion is to open it (auto-detects `open`, `xdg-open`, or `start`)
 
 You can override any of these or add your own in the configuration.
+
+## Requirements
+
+-   Neovim >= 0.10 (required for `vim.system`) — older versions may not support sync commands.
+-   `nvim-lua/plenary.nvim` (utility helpers; listed as a dependency in installation snippets)
+
+## Limitations / Drawbacks
+
+-   Default browser integration is `oil.nvim`; other file explorers require a small adapter function.
+-   Large command outputs are better handled by async mode; synchronous runs use `vim.system` and are blocking.
+-   The quickfix parser assumes "filename:line:col:message" patterns; unusual compiler output may not parse perfectly.
+-   The plugin tries to auto-detect an OS-specific `open` command (`xdg-open`, `open`, `start`), but behavior depends on system PATH.
 
 ## Documentation
 
