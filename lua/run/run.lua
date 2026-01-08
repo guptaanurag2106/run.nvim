@@ -1,6 +1,7 @@
 local utils = require("run.utils")
 local config = require("run.config")
 local M = {}
+local ns_id = vim.api.nvim_create_namespace("RunNvimOutput")
 
 ---Stop a running job by id.
 ---@param job_id number the job id returned by `jobstart`
@@ -84,22 +85,6 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
 end
 
--- M.run_async_new = function(cmd)
---     cmd = utils.split(cmd, " ")
---     vim.system(cmd, {
---         text = true, -- Return text instead of bytes
---     }, function(result)
---         vim.notify(result.stdout, vim.log.levels.INFO)
---         vim.notify(result.stderr, vim.log.levels.ERROR)
---         if result.code == 0 then
---             vim.notify("\nStatus: Completed Successfully (exit code 0)", vim.log.levels.INFO)
---         else
---             vim.notify("\nStatus: Completed Successfully (exit code " .. result.code .. ")",
---                 vim.log.levels.ERROR)
---         end
---     end)
--- end
-
 ---Create or reuse an output buffer/window for command output.
 ---@param window_name string buffer name to use
 ---@return number buf, number win
@@ -148,13 +133,13 @@ local create_reuse_win = function(window_name)
 end
 M.job_id = nil
 
+---Run a command asynchronously using `jobstart` and stream output to buffer.
+---@param cmd string command to run
+---@param curr_dir string working directory
+---@param populate_qflist boolean whether to collect output for quickfix
+---@param open_qflist boolean whether to open quickfix on failure
+---@return number|nil job id if started, otherwise nil
 M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
-    ---Run a command asynchronously using `jobstart` and stream output to buffer.
-    ---@param cmd string command to run
-    ---@param curr_dir string working directory
-    ---@param populate_qflist boolean whether to collect output for quickfix
-    ---@param open_qflist boolean whether to open quickfix on failure
-    ---@return number|nil job id if started, otherwise nil
     if M.job_id ~= nil then
         vim.notify("A command is already running. Please stop it before starting a new one.", vim.log.levels.WARN)
         -- M.stop_job(M.job_id)
@@ -175,8 +160,6 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         "--------------------------------------------------------------------------------",
         "",
     })
-
-    local ns_id = vim.api.nvim_create_namespace("")
 
     vim.hl.range(buf, ns_id, "Title", { 0, 0 }, { 0, -1 }, { inclusive = true })
     vim.hl.range(buf, ns_id, "Special", { 2, 0 }, { 2, -1 }, { inclusive = true })
@@ -267,7 +250,7 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                     local line_count = vim.api.nvim_buf_line_count(buf)
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
                         exit_code == 0 and "Status: Completed Successfully (exit code 0)"
-                            or "Status: Failed (exit code " .. exit_code .. ")",
+                        or "Status: Failed (exit code " .. exit_code .. ")",
                     })
                     vim.hl.range(
                         buf,

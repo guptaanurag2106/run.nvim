@@ -127,7 +127,7 @@ M.runfile = function(range, async)
         if not out_of_browser and need_completion then
             command = M._fill_input(command, curr_dir, file_list)
         end
-        command = command:gsub("%s+", " ")
+        command = command:gsub("%s+", " "):gsub("[\r\n]", "")
 
         local execute = true
         if config.options.ask_confirmation then
@@ -248,6 +248,9 @@ end
 ---@param file_list table file list (names only, not full paths)
 ---@return string formmatted user input
 M._fill_input = function(input, curr_dir, file_list)
+    -- Sanitize curr_dir to remove trailing whitespace/newlines
+    curr_dir = curr_dir:gsub("%s*$", "")
+
     -- Flag to track if any placeholder was found
     local placeholder_found = false
     local result = input
@@ -263,13 +266,11 @@ M._fill_input = function(input, curr_dir, file_list)
 
     -- Special Case: %d/%f equivalent to %d/%1 %d/%2....
     if result:match("%%d" .. utils.path_separator .. "%%f") then
-        local path_string = ""
-        for i, file in ipairs(file_list) do
-            if i > 1 then
-                path_string = path_string .. " " -- Add a space between elements
-            end
-            path_string = path_string .. curr_dir .. utils.path_separator .. file
+        local paths = {}
+        for _, file in ipairs(file_list) do
+            table.insert(paths, curr_dir .. utils.path_separator .. file)
         end
+        local path_string = table.concat(paths, " ")
         result = result:gsub("%%d" .. utils.path_separator .. "%%f", path_string)
         placeholder_found = true
     end
@@ -283,7 +284,7 @@ M._fill_input = function(input, curr_dir, file_list)
 
     -- Replace %d with current directory path
     if result:match("%%d") then
-        result = result:gsub("%%%%", "%%")
+        result = result:gsub("%%d", curr_dir)
         placeholder_found = true
     end
 
@@ -300,13 +301,11 @@ M._fill_input = function(input, curr_dir, file_list)
 
     -- If no placeholder was found, append filepaths at the end
     if not placeholder_found then
-        local path_string = ""
-        for i, file in ipairs(file_list) do
-            if i > 1 then
-                path_string = path_string .. " " -- Add a space between elements
-            end
-            path_string = path_string .. curr_dir .. utils.path_separator .. file
+        local paths = {}
+        for _, file in ipairs(file_list) do
+            table.insert(paths, curr_dir .. utils.path_separator .. file)
         end
+        local path_string = table.concat(paths, " ")
         if result:sub(-1) ~= " " then
             result = result .. " "
         end
@@ -342,7 +341,6 @@ M._get = function(key, path)
     return val, history
 end
 
----save user prompt for given command
 ---Save a user-entered command into history for a given key.
 ---@param key string the command determined from default_actions
 ---@param value string user command for the given prompt
@@ -355,7 +353,7 @@ M._save = function(key, value, path, history)
     end
 
     -- If history is empty, save the default command (key) first so it is preserved
-    if #history[key] == 0 then
+    if #history[key] == 0 and #key > 0 then
         table.insert(history[key], key)
     end
 
@@ -372,8 +370,7 @@ end
 ---Functions for end-user configuration
 --------------------------------------------------------
 
----Checks if a str ends with a suffix or not (useful for file extensions)
----Return true if `str` ends with `suffix`.
+---Return true if `str` ends with `suffix`. (for file extensions)
 ---@param str string
 ---@param suffix string
 ---@return boolean true if str ends with suffix
