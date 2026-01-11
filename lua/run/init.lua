@@ -359,7 +359,7 @@ M._save = function(key, value, path, history)
 
     table.insert(history[key], value)
 
-    while #history[key] > 20 do
+    while #history[key] > 10 do
         table.remove(history[key], 1)
     end
 

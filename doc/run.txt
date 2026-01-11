@@ -158,8 +158,8 @@ Example configuration with default values:
 *history.enable*              Boolean (default: true)
     Whether to enable command history.
 
-*history size*                Integer (internal: 20)
-    The plugin keeps up to 20 entries per command key in history. Old
+*history size*                Integer (internal: 10)
+    The plugin keeps up to 10 entries per command key in history. Old
     entries are pruned automatically.
 
 *history.history_file*        String

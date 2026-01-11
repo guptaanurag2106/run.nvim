@@ -73,7 +73,9 @@ M.input = function(opts, on_confirm)
         group = group,
     })
 
-    vim.api.nvim_win_set_cursor(win, { #lines, #lines[#lines] })
+    if #lines > 0 then
+        vim.api.nvim_win_set_cursor(win, { #lines, #lines[#lines] })
+    end
 
     vim.bo[buf].buftype = "nofile"
     vim.bo[buf].bufhidden = "wipe"
