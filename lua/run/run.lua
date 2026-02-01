@@ -248,9 +248,16 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                     local milliseconds = math.floor((elapsed_time_s - seconds) * 1000)
 
                     local line_count = vim.api.nvim_buf_line_count(buf)
+                    local message = ""
+                    if exit_code == 0 then
+                        message = string.format("Command finished successfully in %d.%03d seconds", seconds, milliseconds)
+                    else
+                        message = string.format("Command failed with exit code %d in %d.%03d seconds", exit_code, seconds,
+                            milliseconds)
+                    end
+
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
-                        exit_code == 0 and "Status: Completed Successfully (exit code 0)"
-                        or "Status: Failed (exit code " .. exit_code .. ")",
+                        message
                     })
                     vim.hl.range(
                         buf,
@@ -261,20 +268,8 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                         { inclusive = true }
                     )
 
-                    vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + 1, false, {
-                        "",
-                        string.format("Command finished in %d.%03d seconds. Press 'q' to exit", seconds, milliseconds),
-                    })
-                    vim.hl.range(
-                        buf,
-                        ns_id,
-                        "Comment",
-                        { line_count + 1, 0 },
-                        { line_count + 2, -1 },
-                        { inclusive = true }
-                    )
                     if vim.api.nvim_win_is_valid(win) then
-                        vim.api.nvim_win_set_cursor(win, { line_count + 2 - 1, 0 })
+                        vim.api.nvim_win_set_cursor(win, { line_count + 1, 0 })
                     end
 
                     if exit_code ~= 0 and vim.api.nvim_win_is_valid(win) then
