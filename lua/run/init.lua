@@ -5,6 +5,34 @@ local utils = require("run.utils")
 local run = require("run.run")
 
 local M = {}
+
+local resolve_fallback_cwd = function(bufnr)
+    local global_cwd = vim.fn.getcwd()
+    if config.options.cwd_fallback_scope ~= "buffer" then
+        return global_cwd
+    end
+
+    if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= "" then
+        return global_cwd
+    end
+
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
+    if bufname == "" then
+        return global_cwd
+    end
+
+    local dir = vim.fn.fnamemodify(bufname, ":p:h")
+    if dir == "" then
+        return global_cwd
+    end
+
+    local stat = vim.uv.fs_stat(dir)
+    if stat and stat.type == "directory" then
+        return dir
+    end
+
+    return global_cwd
+end
 ---Setup the plugin with user-provided options.
 ---@param opts table User configuration overrides
 ---@return nil
@@ -56,7 +84,7 @@ M.runfile = function(range, async)
         --     config.options.current_browser .. "\n" .. curr_dir)
         -- return
         default_command = "" -- Default incase using from somewhere else
-        curr_dir = ""
+        curr_dir = resolve_fallback_cwd(bufnr)
         out_of_browser = true
     end
 

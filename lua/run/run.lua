@@ -154,15 +154,17 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-        "Running: " .. vim.inspect(cmd),
+        "Dir: " .. curr_dir,
+        "Command: " .. vim.inspect(cmd),
         "",
         "Output",
         "--------------------------------------------------------------------------------",
         "",
     })
 
-    vim.hl.range(buf, ns_id, "Title", { 0, 0 }, { 0, -1 }, { inclusive = true })
-    vim.hl.range(buf, ns_id, "Special", { 2, 0 }, { 2, -1 }, { inclusive = true })
+    vim.hl.range(buf, ns_id, "Directory", { 0, 0 }, { 0, -1 }, { inclusive = true })
+    vim.hl.range(buf, ns_id, "Title", { 1, 0 }, { 1, -1 }, { inclusive = true })
+    vim.hl.range(buf, ns_id, "Special", { 3, 0 }, { 3, -1 }, { inclusive = true })
 
     local qf_list = {}
     local start_time = vim.uv.hrtime()

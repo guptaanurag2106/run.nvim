@@ -22,6 +22,14 @@ M.validate_config = function(opts)
     if opts.output_window_cmd ~= nil and type(opts.output_window_cmd) ~= "string" then
         return false, "output_window_cmd must be a string"
     end
+    if opts.cwd_fallback_scope ~= nil and type(opts.cwd_fallback_scope) ~= "string" then
+        return false, "cwd_fallback_scope must be a string"
+    end
+    if opts.cwd_fallback_scope ~= nil
+        and opts.cwd_fallback_scope ~= "global"
+        and opts.cwd_fallback_scope ~= "buffer" then
+        return false, "cwd_fallback_scope must be one of: global, buffer"
+    end
     if opts.open_cmd ~= nil and type(opts.open_cmd) ~= "string" then
         return false, "open_cmd must be a string or nil"
     end

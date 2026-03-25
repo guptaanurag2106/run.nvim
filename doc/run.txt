@@ -51,6 +51,7 @@ Example configuration with default values:
             prompt_hl = "Constant",
         },
         output_window_cmd = "botright 15split",
+        cwd_fallback_scope = "global",
         default_actions = {
             -- ... see detailed default actions below
         },
@@ -138,6 +139,13 @@ Example configuration with default values:
 *open_cmd*                    String or nil (default: nil)
     Command to use for opening files with default application.
     If nil, will auto-detect based on OS.
+
+*cwd_fallback_scope*          String (default: "global")
+    Used only when the active file browser cannot provide cwd.
+    Supported values:
+    - "global": use Neovim cwd from vim.fn.getcwd().
+    - "buffer": use current file directory for normal file buffers;
+      falls back to global cwd for special/temporary buffers.
 
 *populate_qflist_sync*        Boolean (default: false)
     Whether to populate quickfix list for synchronous commands.

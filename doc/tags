@@ -7,6 +7,7 @@
 action_function	run.txt	/*action_function*
 ask_confirmation	run.txt	/*ask_confirmation*
 current_browser	run.txt	/*current_browser*
+cwd_fallback_scope	run.txt	/*cwd_fallback_scope*
 default_actions	run.txt	/*default_actions*
 history.enable	run.txt	/*history.enable*
 history.history_file	run.txt	/*history.history_file*

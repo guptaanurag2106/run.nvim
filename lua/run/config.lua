@@ -11,6 +11,7 @@ local defaults = {
         prompt_hl = "Constant",
     },
     output_window_cmd = "botright 15split",
+    cwd_fallback_scope = "global",
     open_cmd = nil,
     populate_qflist_sync = false,
     populate_qflist_async = true,

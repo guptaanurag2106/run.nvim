@@ -109,6 +109,10 @@ vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFile<CR>", { desc = "(Run.nvim) 
 -   Populating Quickfix List
     -   Based on the [config](#Configuration), the quickfix list is automatically parsed and populated which can be opened via [trouble.nvim](https://github.com/folke/trouble.nvim) or just `:copen`.
     -   Note: when configured to open the quickfix/trouble window, the plugin opens it only for non-zero (failing) exit codes by default to avoid noise on successful runs.
+-   CWD Fallback Scope
+    -   If the active file browser cannot provide cwd, Run.nvim uses `cwd_fallback_scope`.
+    -   `global` uses Neovim cwd (`vim.fn.getcwd()`).
+    -   `buffer` uses the current file directory for normal file buffers and falls back to `global` for special or temporary buffers.
 
 ## Configuration
 
@@ -149,6 +153,11 @@ require("run").setup({
 
   -- Command to open the output window
   output_window_cmd = "botright 15split",
+
+  -- Fallback cwd scope when browser cwd lookup fails
+  -- "global": use Neovim cwd (vim.fn.getcwd())
+  -- "buffer": use current file directory for normal file buffers
+  cwd_fallback_scope = "global",
 
   -- Customize default actions for specific file types
   default_actions = {
