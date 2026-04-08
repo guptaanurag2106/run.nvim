@@ -51,7 +51,7 @@ end
 ---@param open_qflist boolean whether to open quickfix on failure
 ---@return nil
 M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
-    local cmd_list = utils.split(cmd, " ")
+    local cmd_list = { vim.o.shell, vim.o.shellcmdflag, cmd }
     -- Using newer vim.system API (Neovim 0.10+)
     local opts = {
         detach = false,
@@ -133,6 +133,41 @@ local create_reuse_win = function(window_name)
 end
 M.job_id = nil
 
+local on_stream_data = function(buf, win, data, qf_list, populate_qflist, hl_group)
+    if not data or #data == 0 then
+        return
+    end
+
+    vim.schedule(function()
+        if not vim.api.nvim_buf_is_loaded(buf) then
+            return
+        end
+
+        if populate_qflist then
+            qf_list = utils.appendTable(qf_list, data)
+        end
+
+        local line_count = vim.api.nvim_buf_line_count(buf)
+        local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
+        data[1] = last_line .. data[1]
+        for i = 1, #data do
+            -- vim represents null as \n and new line as \r
+            -- https://vim.fandom.com/wiki/Newlines_and_nulls_in_Vim_script
+            data[i] = data[i]:gsub("\n", "")
+        end
+        vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
+
+        local end_line = line_count + #data - 1
+        if hl_group then
+            vim.hl.range(buf, ns_id, hl_group, { line_count - 1, 0 }, { end_line, -1 }, { inclusive = true })
+        end
+
+        if vim.api.nvim_win_is_valid(win) then
+            vim.api.nvim_win_set_cursor(win, { end_line, 0 })
+        end
+    end)
+end
+
 ---Run a command asynchronously using `jobstart` and stream output to buffer.
 ---@param cmd string command to run
 ---@param curr_dir string working directory
@@ -173,67 +208,11 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         cwd = curr_dir,
         detach = false,
         on_stdout = function(_, data)
-            if not data or #data == 0 then
-                return
-            end
-
-            vim.schedule(function()
-                if not vim.api.nvim_buf_is_loaded(buf) then
-                    return
-                end
-                if populate_qflist then
-                    qf_list = utils.appendTable(qf_list, data)
-                end
-                local line_count = vim.api.nvim_buf_line_count(buf)
-                local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
-                data[1] = last_line .. data[1]
-                for i = 1, #data do
-                    -- vim represents null as \n and new line as \r
-                    -- https://vim.fandom.com/wiki/Newlines_and_nulls_in_Vim_script
-                    data[i] = data[i]:gsub("\n", "")
-                end
-                vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
-
-                if vim.api.nvim_win_is_valid(win) then
-                    vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
-                end
-            end)
+            on_stream_data(buf, win, data, qf_list, populate_qflist, nil)
         end,
 
         on_stderr = function(_, data)
-            if not data or #data == 0 then
-                return
-            end
-            vim.schedule(function()
-                if not vim.api.nvim_buf_is_loaded(buf) then
-                    return
-                end
-                if populate_qflist then
-                    qf_list = utils.appendTable(qf_list, data)
-                end
-                local line_count = vim.api.nvim_buf_line_count(buf)
-                local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
-                data[1] = last_line .. data[1]
-                for i = 1, #data do
-                    -- vim represents null as \n and new line as \r
-                    -- https://vim.fandom.com/wiki/Newlines_and_nulls_in_Vim_script
-                    data[i] = data[i]:gsub("\n", "")
-                end
-                vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
-
-                vim.hl.range(
-                    buf,
-                    ns_id,
-                    "ErrorMsg",
-                    { line_count - 1, 0 },
-                    { line_count + #data - 1, -1 },
-                    { inclusive = true }
-                )
-
-                if vim.api.nvim_win_is_valid(win) then
-                    vim.api.nvim_win_set_cursor(win, { line_count + #data - 1, 0 })
-                end
-            end)
+            on_stream_data(buf, win, data, qf_list, populate_qflist, "ErrorMsg")
         end,
 
         on_exit = function(id, exit_code)
