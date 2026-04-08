@@ -65,7 +65,7 @@ M.input = function(opts, on_confirm)
 
     apply_prompt()
 
-    -- Re-apply prompt on text change (e.g., adding new lines)
+    -- Re-apply prompt on text change, kinda slow but will see later
     local group = vim.api.nvim_create_augroup("RunInputPrompt", { clear = true })
     vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
         buffer = buf,
@@ -118,7 +118,9 @@ M.input = function(opts, on_confirm)
     -- Set CWD locally for this window so native file completion works
     if opts.cwd and opts.cwd ~= "" then
         vim.api.nvim_win_call(win, function()
-            vim.cmd.lcd(opts.cwd)
+            if vim.fn.getcwd() ~= opts.cwd then
+                vim.cmd.lcd(opts.cwd)
+            end
         end)
     end
 end

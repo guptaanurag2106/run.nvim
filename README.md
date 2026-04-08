@@ -105,7 +105,7 @@ vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFile<CR>", { desc = "(Run.nvim) 
     -   The buffer is reused if multiple `:RunFile` are started
 -   History
     -   If you provide a command other than default, it is saved to history and is suggested from then onwards for that filetype
-    -   History is stored as JSON in your `stdpath('data')` by default. The plugin keeps up to 20 entries per command key.
+    -   History is stored as JSON in your `stdpath('data')` by default. The plugin keeps up to 10 entries per command key.
 -   Populating Quickfix List
     -   Based on the [config](#Configuration), the quickfix list is automatically parsed and populated which can be opened via [trouble.nvim](https://github.com/folke/trouble.nvim) or just `:copen`.
     -   Note: when configured to open the quickfix/trouble window, the plugin opens it only for non-zero (failing) exit codes by default to avoid noise on successful runs.
@@ -174,13 +174,20 @@ require("run").setup({
           return "make -B", false
       end
 
+       local has_go_marker = false
+       local only_go_project_files = #file_list > 0
        for _, file in ipairs(file_list) do
            if file == "go.mod" or file == "go.sum" then
-               return "go run .", false
+               has_go_marker = true
+           elseif not file:match("%.go$") then
+               only_go_project_files = false
            end
        end
-      return nil, false
-  end
+       if has_go_marker and only_go_project_files then
+           return "go run .", false
+       end
+       return nil, false
+   end
 })
 ```
 

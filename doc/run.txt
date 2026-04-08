@@ -75,7 +75,7 @@ Example configuration with default values:
 
 *:RunFileSync*      Run a command on the current file/folder(s) (synchronous)
                   The command blocks until execution completes and shows
-                  output in a split window below.
+                  output via notifications.
 
 
 ==============================================================================
@@ -200,11 +200,18 @@ Example configuration with default values:
             return "make -B", false --false signifies the command is complete
                                  --and needs no filling (%f, %d etc.)
         end
-        -- Default Go support
+        -- Default Go support (only when selection is Go project files)
+        local has_go_marker = false
+        local only_go_project_files = #file_list > 0
         for _, file in ipairs(file_list) do
             if file == "go.mod" or file == "go.sum" then
-                return "go run .", false
+                has_go_marker = true
+            elseif not file:match("%.go$") then
+                only_go_project_files = false
             end
+        end
+        if has_go_marker and only_go_project_files then
+            return "go run .", false
         end
     end
 <

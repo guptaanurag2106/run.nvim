@@ -57,7 +57,7 @@ M.path_join = function(...)
     end
 
     local result = ""
-    for i, part in ipairs(args) do
+    for _, part in ipairs(args) do
         part = normalize_sep(part)
         if part == "" then
             goto continue
@@ -83,7 +83,7 @@ end
 ---@param suffix string
 ---@return boolean
 M.ends_with = function(str, suffix)
-    return str:sub(-#suffix) == suffix
+    return str:sub(- #suffix) == suffix
 end
 
 --- Get the file extension from a given filename.

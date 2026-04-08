@@ -141,10 +141,17 @@ local defaults = {
             return "make -B", false
         end
 
+        local has_go_marker = false
+        local only_go_project_files = #file_list > 0
         for _, file in ipairs(file_list) do
             if file == "go.mod" or file == "go.sum" then
-                return "go run .", false
+                has_go_marker = true
+            elseif not file:match("%.go$") then
+                only_go_project_files = false
             end
+        end
+        if has_go_marker and only_go_project_files then
+            return "go run .", false
         end
         return nil, false
     end,
