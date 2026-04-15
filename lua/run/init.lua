@@ -91,14 +91,26 @@ end
 ---@return nil
 M.runfile = function(range, async)
     local bufnr = vim.api.nvim_get_current_buf()
+    local current_filetype = vim.bo[bufnr].filetype
 
     local default_command = "{open} %f"
     local need_completion = true
     local out_of_browser = false
 
-    local ok, file_list = pcall(M._get_current_files, range, bufnr)
-    local curr_dir = nil
-    if not ok or file_list == nil then
+    local skip_browser_lookup = config.options.current_browser == "oil" and current_filetype ~= "oil"
+
+    local ok = false
+    local file_list = {}
+    local curr_dir = ""
+    if skip_browser_lookup then
+        default_command = "" -- Default incase using from somewhere else
+        curr_dir = resolve_fallback_cwd(bufnr)
+        out_of_browser = true
+    else
+        ok, file_list = pcall(M._get_current_files, range, bufnr)
+    end
+
+    if not skip_browser_lookup and not ok then
         -- print("Cannot get current files. Please ensure you are in the file browser: " ..
         --     config.options.current_browser .. "\n" .. file_list)
         -- return
@@ -106,7 +118,7 @@ M.runfile = function(range, async)
         file_list = {}
         curr_dir = resolve_fallback_cwd(bufnr)
         out_of_browser = true
-    else
+    elseif not skip_browser_lookup then
         local ok1, browser_cwd = pcall(M._get_current_dir, bufnr)
         if not ok1 or browser_cwd == nil or browser_cwd:len() == 0 then
             -- print("Cannot get current directory. Please ensure you are in the file browser: " ..
@@ -118,16 +130,16 @@ M.runfile = function(range, async)
         else
             curr_dir = browser_cwd
         end
-    end
 
-    if #file_list > 0 then
-        local filtered_file_list = {}
-        for _, file in ipairs(file_list) do
-            if file ~= ".." then
-                filtered_file_list[#filtered_file_list + 1] = file
+        if #file_list > 0 then
+            local filtered_file_list = {}
+            for _, file in ipairs(file_list) do
+                if file ~= ".." then
+                    filtered_file_list[#filtered_file_list + 1] = file
+                end
             end
+            file_list = filtered_file_list
         end
-        file_list = filtered_file_list
     end
 
     local has_action_function_command = false
@@ -149,7 +161,7 @@ M.runfile = function(range, async)
         need_completion = true
     end
 
-    local suggestion_hist = nil
+    local suggestion_hist = {}
     local history = {}
 
     if config.options.history ~= nil and config.options.history.enable then
@@ -164,9 +176,11 @@ M.runfile = function(range, async)
         end
     end
 
-    local prompt = "[Run (Default: " .. default_command .. ") on " .. table.concat(file_list, ", ") .. "]: "
+    local prompt
     if out_of_browser then
         prompt = "[Run]: "
+    else
+        prompt = "[Run (Default: " .. default_command .. ") on " .. table.concat(file_list, ", ") .. "]: "
     end
 
     local ui_history = {}
@@ -404,7 +418,7 @@ M._get = function(key, path)
     local mtime_sec = stat and stat.mtime and stat.mtime.sec or nil
     local mtime_nsec = stat and stat.mtime and stat.mtime.nsec or nil
 
-    local history = nil
+    local history = {}
     if history_cache.path == path and history_cache.history ~= nil and history_cache.mtime_sec == mtime_sec
         and history_cache.mtime_nsec == mtime_nsec then
         history = history_cache.history

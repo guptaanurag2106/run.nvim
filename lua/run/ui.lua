@@ -1,31 +1,28 @@
 local config = require("run.config")
 local M = {}
 
+-- Position at the very bottom
+local row = vim.o.lines - 2 -- -1 for command line, and 1 for new window
+if vim.o.cmdheight == 0 then
+    row = vim.o.lines - 1
+end
+
+local win_opts = {
+    relative = "editor",
+    row = row,
+    col = 0,
+    width = vim.o.columns,
+    height = 1,
+    style = "minimal",
+    border = config.options.ui.border,
+}
+
 ---Creates a floating input window at the bottom
 ---@param opts table { prompt: string, default: string, history: table }
 ---@param on_confirm function Callback(input: string|nil)
 ---@return nil
 M.input = function(opts, on_confirm)
     local buf = vim.api.nvim_create_buf(false, true)
-    local width = vim.o.columns
-    local height = 1
-
-    -- Position at the very bottom
-    local row = vim.o.lines - height - 1 -- -1 for command line
-    if vim.o.cmdheight == 0 then
-        row = vim.o.lines - height
-    end
-    local col = 0
-
-    local win_opts = {
-        relative = "editor",
-        row = row,
-        col = col,
-        width = width,
-        height = height,
-        style = "minimal",
-        border = config.options.ui.border,
-    }
 
     local win = vim.api.nvim_open_win(buf, true, win_opts)
 
@@ -106,11 +103,6 @@ M.input = function(opts, on_confirm)
     end)
 
     map("n", "<Esc>", function()
-        close()
-        on_confirm(nil)
-    end)
-
-    map("n", "q", function()
         close()
         on_confirm(nil)
     end)
