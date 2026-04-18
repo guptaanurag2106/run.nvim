@@ -163,9 +163,10 @@ M.runfile = function(range, async)
 
     local suggestion_hist = {}
     local history = {}
+    local history_key = out_of_browser and "__run_out_of_browser__" or default_command
 
     if config.options.history ~= nil and config.options.history.enable then
-        ok, suggestion_hist, history = pcall(M._get, default_command, config.options.history.history_file)
+        ok, suggestion_hist, history = pcall(M._get, history_key, config.options.history.history_file)
         if ok then
             if not suggestion_hist then
                 suggestion_hist = {}
@@ -183,12 +184,7 @@ M.runfile = function(range, async)
         prompt = "[Run (Default: " .. default_command .. ") on " .. table.concat(file_list, ", ") .. "]: "
     end
 
-    local ui_history = {}
-    if suggestion_hist ~= nil and #suggestion_hist > 0 then
-        for i = 1, #suggestion_hist - 1 do
-            table.insert(ui_history, suggestion_hist[i])
-        end
-    end
+    local ui_history = #suggestion_hist > 1 and vim.list_slice(suggestion_hist, 1, #suggestion_hist - 1) or {}
 
     local default_suggestion = suggestion_hist[#suggestion_hist] or default_command
 
@@ -237,7 +233,7 @@ M.runfile = function(range, async)
 
         if config.options.history ~= nil and config.options.history.enable then
             if default_command ~= input and default_suggestion ~= input and string.len(input) ~= 0 then
-                M._save(default_command, input, config.options.history.history_file, history) -- Key is command (deterministic) and user choice is input (from prompt)
+                M._save(history_key, input, config.options.history.history_file, history, default_command) -- Key is command (deterministic) and user choice is input (from prompt)
             end
         end
 
@@ -454,15 +450,20 @@ end
 ---@param value string user command for the given prompt
 ---@param path string the history file path
 ---@param history table the old history, (_save will modify it)
+---@param seed string|nil default suggestion for this key
 ---@return nil
-M._save = function(key, value, path, history)
+M._save = function(key, value, path, history, seed)
     if history[key] == nil then
         history[key] = {}
     end
 
     -- If history is empty, save the default command (key) first so it is preserved
-    if #history[key] == 0 and #key > 0 then
-        table.insert(history[key], key)
+    local default_seed = seed
+    if default_seed == nil then
+        default_seed = key
+    end
+    if #history[key] == 0 and #default_seed > 0 then
+        table.insert(history[key], default_seed)
     end
 
     table.insert(history[key], value)

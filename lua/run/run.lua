@@ -283,14 +283,13 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
     M.job_id = job_id
 
-    vim.api.nvim_buf_set_keymap(buf, "n", "q", ':lua require("run")._stop_job(' .. M.job_id .. ') vim.cmd("q")<CR>', {
-        noremap = true,
-        silent = true,
-    })
-    vim.api.nvim_buf_set_keymap(buf, "n", "<C-c>", ':lua require("run")._stop_job(' .. M.job_id .. ")<CR>", {
-        noremap = true,
-        silent = true,
-    })
+    vim.keymap.set("n", "q", function()
+        M.stop_job(M.job_id)
+        vim.cmd("q")
+    end, { buffer = buf, noremap = true, silent = true })
+    vim.keymap.set("n", "<C-c>", function()
+        M.stop_job(M.job_id)
+    end, { buffer = buf, noremap = true, silent = true })
     return M.job_id
 end
 
