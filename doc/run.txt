@@ -1,5 +1,5 @@
 *run* *run.nvim*  Lightweight Neovim plugin
-              designed to streamline file operations in file explorers like Oil
+              combining dired-do-shell-command and compile style usage
 
 ==============================================================================
 CONTENTS                                                          *run-contents*
@@ -16,10 +16,15 @@ CONTENTS                                                          *run-contents*
 ==============================================================================
 1. INTRODUCTION                                               *run-introduction*
 
-Run.nvim makes it easy to execute commands on files and directories directly
-from a file explorer, by just visually selecting the list of files you want to
-operate on. It allows you to run appropriate commands based on file types,
-with proper path handling and output visualization.
+Run.nvim lets you run commands on files and directories from two directions:
+select files in a file explorer, or run from a regular buffer as a quick
+compile/run prompt.
+
+Emacs references:
+- dired-do-shell-command:
+  https://www.gnu.org/software/emacs/manual/html_node/emacs/Shell-Commands-in-Dired.html
+- compile:
+  https://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation.html
 
 ==============================================================================
 2. REQUIREMENTS                                               *run-requirements*

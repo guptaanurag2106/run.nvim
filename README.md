@@ -1,9 +1,10 @@
 # Run.nvim
 
-Run.nvim is a lightweight Neovim plugin that streamlines file operations within file explorers like Oil and netrw.
-Inspired by the convenience of Emacs’ Dired mode([dired-do-shell-command](https://www.gnu.org/software/emacs/manual/html_node/emacs/Shell-Commands-in-Dired.html)),
-Run.nvim lets you quickly execute common file commands (such as extracting archives, changing permissions, or running common file types)
-directly from your file browser.
+Run.nvim is a lightweight Neovim plugin that combines
+[`dired-do-shell-command`](https://www.gnu.org/software/emacs/manual/html_node/emacs/Shell-Commands-in-Dired.html)
+and [`compile`](https://www.gnu.org/software/emacs/manual/html_node/emacs/Compilation.html).
+
+Select files in a file explorer and run shell commands on them, or run from a regular buffer as a quick compile/run prompt.
 
 You can simply select files (by placing your cursor on the line, or visual-select a list of files),
 call the plugin and run commands on those files
@@ -31,21 +32,16 @@ https://github.com/user-attachments/assets/98fd5f4e-bbe5-434d-8d4d-b7f199cfc49a
 
 ## Why Run.nvim
 
-When working in Neovim, you often need to perform various operations on files -
-running scripts, extracting archives, compiling code, or opening files with
-external applications.
+Run.nvim gives you a simple command prompt for files: select entries in a file
+browser, or run directly from a regular buffer like a compile command.
 
-Run.nvim makes these tasks easier by:
+It helps by:
 
--   Providing sensible default commands based on file types (Not having to remember the exact commands)
+-   Suggesting sensible default commands based on file type
 -   Executing commands without leaving your editor
--   Running commands in the directory open in the browser (irrespective of `cwd`)
--   Displaying command output directly in Neovim in a separate buffer, to easily copy/modify the output
--   Supporting both synchronous and asynchronous execution options
--   Providing placeholder system ([Command Placeholders](#command-placeholders)) for easy typing
-
-The plugin is particularly useful for file browser workflows, where you're already navigating
-your filesystem within Neovim and want to perform operations on the files you're browsing.
+-   Running commands in the directory open in the browser (independent of `cwd`)
+-   Showing async output in Neovim and supporting sync runs
+-   Supporting placeholders for quick command entry ([Command Placeholders](#command-placeholders))
 
 ## Installation
 
@@ -78,6 +74,7 @@ use {
 1. Navigate to a file in your file browser ([oil.nvim](https://github.com/stevearc/oil.nvim) by default)
 2. For background execution with live output in a new buffer, use `:RunFile`
 3. Press `:RunFileSync` to run the appropriate command for that file type synchronously
+4. You can also run `:RunFile` from a regular buffer as a quick compile-style prompt
    Note: `:RunFile` uses a small custom floating input UI by default. You can fallback to `vim.ui.input` by setting `use_custom_ui = false` in the setup options.
 
 ## User Commands and Keymaps
@@ -236,19 +233,19 @@ Placeholder notes:
 
 Run.nvim comes with sensible defaults for common file types:
 
--   **Python** (`.py`): `python %f`
--   **Bash/Shell** (`.sh`, `.bash`): Executes scripts
--   **Archives** (`.tar.gz`, `.zip`): Extracts to current directory
--   **Go** (`.go`): `go run %f`
--   **Rust** (`.rs`): `rustc %f -o a.out && ./a.out`
--   **Zig** (`.zig`): `zig run %f`
--   **JavaScript/TypeScript** (`.js`, `.ts`): Runs with Node.js/ts-node
--   **Java** (`.java`, `.jar`): Compiles and runs Java files or runs JARs
--   **C/C++** (`.c`, `.cpp`): Compiles source files and runs `a.out`
--   **Markdown** (`.md`): Converts to HTML with pandoc
--   **JSON/CSV**: Pretty-prints JSON with `jq` or displays CSV with `column`
--   **Media** (`.mp4`, `.mp3`): Opens with VLC
--   **Web/PDF** (`.html`, `.pdf`): Opens in default viewer/browser
+-   Python (`.py`): `python %f`
+-   Bash/Shell (`.sh`, `.bash`): Executes scripts
+-   Archives (`.tar.gz`, `.zip`): Extracts to current directory
+-   Go (`.go`): `go run %f`
+-   Rust (`.rs`): `rustc %f -o a.out && ./a.out`
+-   Zig (`.zig`): `zig run %f`
+-   JavaScript/TypeScript (`.js`, `.ts`): Runs with Node.js/ts-node
+-   Java (`.java`, `.jar`): Compiles and runs Java files or runs JARs
+-   C/C++ (`.c`, `.cpp`): Compiles source files and runs `a.out`
+-   Markdown (`.md`): Converts to HTML with pandoc
+-   JSON/CSV: Pretty-prints JSON with `jq` or displays CSV with `column`
+-   Media (`.mp4`, `.mp3`): Opens with VLC
+-   Web/PDF (`.html`, `.pdf`): Opens in default viewer/browser
 
 -   Special Types
     -   _no_extension_: Default suggestion is `chmod +x %f`
@@ -267,7 +264,7 @@ You can override any of these or add your own in the configuration.
 ## Limitations / Drawbacks
 
 -   Default browser integration is `oil.nvim`; other file explorers require a small adapter function.
--   Large command outputs are better handled by async mode; synchronous runs use `vim.system` and are blocking.
+-   Long running commands are better handled by async mode; synchronous runs use `vim.system` and are blocking.
 -   The quickfix parser assumes "filename:line:col:message" patterns; unusual compiler output may not parse perfectly.
 -   The plugin tries to auto-detect an OS-specific `open` command (`xdg-open`, `open`, `start`), but behavior depends on system PATH.
 
