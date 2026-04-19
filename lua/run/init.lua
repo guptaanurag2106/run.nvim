@@ -5,6 +5,13 @@ local utils = require("run.utils")
 local run = require("run.run")
 
 local M = {}
+
+M.last_run = {
+    command = "",
+    cwd = "",
+    async = false
+}
+
 local history_cache = {
     path = nil,
     mtime_sec = nil,
@@ -62,6 +69,7 @@ local resolve_fallback_cwd = function(bufnr)
 
     return global_cwd
 end
+
 ---Setup the plugin with user-provided options.
 ---@param opts table User configuration overrides
 ---@return nil
@@ -83,6 +91,10 @@ M.setup = function(opts)
     vim.api.nvim_create_user_command("RunFileSync", function(args)
         M.runfile({ ["line1"] = args.line1, ["line2"] = args.line2 }, false)
     end, { desc = "Run `command` on selected/hovered files", range = true })
+
+    vim.api.nvim_create_user_command("RunLast", function()
+        M.runLast()
+    end, { desc = "Re-run previous command" })
 end
 
 ---Run command on the selected file list
@@ -110,7 +122,7 @@ M.runfile = function(range, async)
         ok, file_list = pcall(M._get_current_files, range, bufnr)
     end
 
-    if not skip_browser_lookup and not ok then
+    if not skip_browser_lookup and (not ok or file_list == nil) then
         -- print("Cannot get current files. Please ensure you are in the file browser: " ..
         --     config.options.current_browser .. "\n" .. file_list)
         -- return
@@ -227,7 +239,7 @@ M.runfile = function(range, async)
         end
 
         if not execute then
-            vim.notify("\nCancelled", vim.log.levels.ERROR)
+            vim.notify("\nRun: Cancelled", vim.log.levels.ERROR)
             return
         end
 
@@ -236,6 +248,12 @@ M.runfile = function(range, async)
                 M._save(history_key, input, config.options.history.history_file, history, default_command) -- Key is command (deterministic) and user choice is input (from prompt)
             end
         end
+
+        M.last_run = {
+            command = command,
+            cwd = curr_dir,
+            async = async
+        }
 
         -- Run `input`
         if async then
@@ -258,6 +276,24 @@ M.runfile = function(range, async)
         }, on_confirm)
     else
         vim.ui.input({ prompt = prompt, default = default_suggestion, completion = "file" }, on_confirm)
+    end
+end
+
+M.runLast = function()
+    local command = M.last_run.command
+    if command ~= nil and command ~= "" then
+        -- Run `input`
+        if M.last_run.async then
+            local job_id =
+                run.run_async(command, M.last_run.cwd, config.options.populate_qflist_async,
+                    config.options.open_qflist_async)
+            _ = job_id
+        else
+            print("\n")
+            run.run_sync(command, M.last_run.cwd, config.options.populate_qflist_sync, config.options.open_qflist_sync)
+        end
+    else
+        vim.notify("Run: No last command found", vim.log.levels.WARN)
     end
 end
 

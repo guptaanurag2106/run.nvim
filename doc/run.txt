@@ -82,6 +82,8 @@ Example configuration with default values:
                   The command blocks until execution completes and shows
                   output via notifications.
 
+*:RunLast*          Re-run the last executed command in the same cwd.
+
 
 ==============================================================================
 5. FUNCTIONS                                                     *run-functions*
