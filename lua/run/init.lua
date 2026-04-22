@@ -111,33 +111,31 @@ M.runfile = function(range, async)
 
     local skip_browser_lookup = config.options.current_browser == "oil" and current_filetype ~= "oil"
 
-    local ok = false
     local file_list = {}
     local curr_dir = ""
+    local browser_err = nil
     if skip_browser_lookup then
         default_command = "" -- Default incase using from somewhere else
-        curr_dir = resolve_fallback_cwd(bufnr)
         out_of_browser = true
     else
-        ok, file_list = pcall(M._get_current_files, range, bufnr)
+        file_list, browser_err = M._get_current_files(range, bufnr)
     end
 
-    if not skip_browser_lookup and (not ok or file_list == nil) then
+    if not skip_browser_lookup and (file_list == nil or browser_err ~= nil) then
         -- print("Cannot get current files. Please ensure you are in the file browser: " ..
         --     config.options.current_browser .. "\n" .. file_list)
         -- return
         default_command = "" -- Default incase using from somewhere else
         file_list = {}
-        curr_dir = resolve_fallback_cwd(bufnr)
         out_of_browser = true
     elseif not skip_browser_lookup then
-        local ok1, browser_cwd = pcall(M._get_current_dir, bufnr)
-        if not ok1 or browser_cwd == nil or browser_cwd:len() == 0 then
+        local browser_cwd = nil
+        browser_cwd, browser_err = M._get_current_dir(bufnr)
+        if browser_err ~= nil or browser_cwd == nil or browser_cwd:len() == 0 then
             -- print("Cannot get current directory. Please ensure you are in the file browser: " ..
             --     config.options.current_browser .. "\n" .. browser_cwd)
             -- return
             default_command = "" -- Default incase using from somewhere else
-            curr_dir = resolve_fallback_cwd(bufnr)
             out_of_browser = true
         else
             curr_dir = browser_cwd
@@ -178,8 +176,9 @@ M.runfile = function(range, async)
     local history_key = out_of_browser and "__run_out_of_browser__" or default_command
 
     if config.options.history ~= nil and config.options.history.enable then
-        ok, suggestion_hist, history = pcall(M._get, history_key, config.options.history.history_file)
-        if ok then
+        local ok_history
+        ok_history, suggestion_hist, history = pcall(M._get, history_key, config.options.history.history_file)
+        if ok_history then
             if not suggestion_hist then
                 suggestion_hist = {}
             end
@@ -204,6 +203,10 @@ M.runfile = function(range, async)
         -- Continue execution inside callback since it's async
         if not input then
             return
+        end
+
+        if curr_dir == "" then
+            curr_dir = resolve_fallback_cwd(bufnr)
         end
 
         local command = ""
@@ -272,7 +275,7 @@ M.runfile = function(range, async)
             prompt = prompt,
             default = default_suggestion,
             history = ui_history,
-            cwd = curr_dir,
+            cwd = out_of_browser and nil or curr_dir,
         }, on_confirm)
     else
         vim.ui.input({ prompt = prompt, default = default_suggestion, completion = "file" }, on_confirm)
@@ -560,14 +563,16 @@ end
 ---For the path also user get_current_dir
 ---@param range table Range of selection (from user_command `command` params)
 ---@param bufnr integer bufnr of the open browser
----@return table|nil Path of the selected file
+---@return table|nil files Path of the selected file
+---@return string|nil err error string
 M._get_current_files = function(range, bufnr)
     return _browsers.get_current_files(range, bufnr)
 end
 
 ---Get path of open folder in browser
 ---@param bufnr integer bufnr of the open browser
----@return string|nil Path of the open folder
+---@return string|nil dir Path of the open folder
+---@return string|nil err error string
 M._get_current_dir = function(bufnr)
     return _browsers.get_current_dir(bufnr)
 end

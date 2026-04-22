@@ -85,45 +85,43 @@ end
 ---Gets current file names under cursor/selection using the `current_browser`
 ---@param range table Range of selection (from user_command `command` params)
 ---@param bufnr integer The buffer number
----@return table|nil list of filenames or nil on error
+---@return table|nil files list of filenames
+---@return string|nil err error string when unavailable
 M.get_current_files = function(range, bufnr)
     local browser = M.browsers[M.current_browser]
     if not browser then
-        error("Browser " .. M.current_browser .. " is not implemented")
-        return nil
+        return nil, "Browser " .. M.current_browser .. " is not implemented"
     end
     if browser.get_current_files then
         local files = M.browsers[M.current_browser].get_current_files(range, bufnr)
         if files and #files ~= 0 then
-            return files
+            return files, nil
         else
-            error(M.current_browser .. " returned empty file_name list")
+            return nil, M.current_browser .. " returned empty file_name list"
         end
     else
-        error("Browser " .. M.current_browser .. " does not implement get_current_files")
-        return nil
+        return nil, "Browser " .. M.current_browser .. " does not implement get_current_files"
     end
 end
 
 ---Gets current open directory in the `current_browser`
 ---@param bufnr integer The buffer number
----@return string|nil current directory or nil on error
+---@return string|nil dir current directory
+---@return string|nil err error string when unavailable
 M.get_current_dir = function(bufnr)
     local browser = M.browsers[M.current_browser]
     if not browser then
-        error("Browser " .. M.current_browser .. " is not implemented")
-        return nil
+        return nil, "Browser " .. M.current_browser .. " is not implemented"
     end
     if browser.get_current_dir then
         local dir = M.browsers[M.current_browser].get_current_dir(bufnr)
         if dir and string.len(dir) ~= 0 then
-            return dir
+            return dir, nil
         else
-            error(M.current_browser .. " returned empty dir_name")
+            return nil, M.current_browser .. " returned empty dir_name"
         end
     else
-        error("Browser " .. M.current_browser .. " does not implement get_current_dir")
-        return nil
+        return nil, "Browser " .. M.current_browser .. " does not implement get_current_dir"
     end
 end
 
