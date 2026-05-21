@@ -84,6 +84,8 @@ Example configuration with default values:
 
 *:RunLast*          Re-run the last executed command in the same cwd.
 
+*:RunStop*          Stop the current running async command.
+
 
 ==============================================================================
 5. FUNCTIONS                                                     *run-functions*

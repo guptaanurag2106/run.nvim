@@ -3,12 +3,13 @@ local config = require("run.config")
 local M = {}
 local ns_id = vim.api.nvim_create_namespace("RunNvimOutput")
 
+M.job_id = nil
+
 ---Stop a running job by id.
----@param job_id number the job id returned by `jobstart`
 ---@return nil
-M.stop_job = function(job_id)
-    if job_id and job_id > 0 then
-        pcall(vim.fn.jobstop, job_id)
+M.stop_job = function()
+    if M.job_id and M.job_id > 0 then
+        pcall(vim.fn.jobstop, M.job_id)
     end
     M.job_id = nil
 end
@@ -124,14 +125,13 @@ local create_reuse_win = function(window_name)
         group = group,
         buffer = buf,
         callback = function()
-            M.stop_job(M.job_id)
+            M.stop_job()
         end,
     })
     vim.api.nvim_set_current_win(orig_win)
 
     return buf, win
 end
-M.job_id = nil
 
 local on_stream_data = function(buf, win, data, qf_list, populate_qflist, hl_group)
     if not data or #data == 0 then
@@ -177,7 +177,7 @@ end
 M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     if M.job_id ~= nil then
         vim.notify("A command is already running. Please stop it before starting a new one.", vim.log.levels.WARN)
-        -- M.stop_job(M.job_id)
+        -- M.stop_job()
         return nil
     end
 
@@ -284,12 +284,12 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     M.job_id = job_id
 
     vim.keymap.set("n", "q", function()
-        M.stop_job(M.job_id)
+        M.stop_job()
         vim.cmd("q")
     end, { buffer = buf, noremap = true, silent = true })
 
     vim.keymap.set("n", "<C-c>", function()
-        M.stop_job(M.job_id)
+        M.stop_job()
     end, { buffer = buf, noremap = true, silent = true })
 
     return M.job_id

@@ -95,6 +95,10 @@ M.setup = function(opts)
     vim.api.nvim_create_user_command("RunLast", function()
         M.runLast()
     end, { desc = "Re-run previous command" })
+
+    vim.api.nvim_create_user_command("RunStop", function()
+        M.runStop()
+    end, { desc = "Stop the current running command" })
 end
 
 ---Run command on the selected file list
@@ -282,6 +286,8 @@ M.runfile = function(range, async)
     end
 end
 
+---Re-run previous command
+---@return nil
 M.runLast = function()
     local command = M.last_run.command
     if command ~= nil and command ~= "" then
@@ -297,6 +303,17 @@ M.runLast = function()
         end
     else
         vim.notify("Run: No last command found", vim.log.levels.WARN)
+    end
+end
+
+---Stop the current running command
+---@return nil
+M.runStop = function()
+    if run.job_id and run.job_id > 0 then
+        run.stop_job()
+        vim.notify("Run: Stopped running job", vim.log.levels.INFO)
+    else
+        vim.notify("Run: No running job", vim.log.levels.INFO)
     end
 end
 
@@ -575,10 +592,6 @@ end
 ---@return string|nil err error string
 M._get_current_dir = function(bufnr)
     return _browsers.get_current_dir(bufnr)
-end
-
-M._stop_job = function(job_id)
-    run.stop_job(job_id)
 end
 
 return M

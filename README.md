@@ -75,16 +75,18 @@ use {
 2. For background execution with live output in a new buffer, use `:RunFile`
 3. Press `:RunFileSync` to run the appropriate command for that file type synchronously
 4. Use `:RunLast` to re-run the last executed command in the same cwd
-5. You can also run `:RunFile` from a regular buffer as a quick compile-style prompt
-   Note: `:RunFile` uses a small custom floating input UI by default. You can fallback to `vim.ui.input` by setting `use_custom_ui = false` in the setup options.
+5. Use `:RunStop` to stop the current running async command
+6. You can also run `:RunFile` from a regular buffer as a quick compile-style prompt
+   Note: `:RunFile` uses a small custom input UI by default. You can fallback to `vim.ui.input` by setting `use_custom_ui = false` in the setup options.
 
 ## User Commands and Keymaps
 
-The plugin creates three user commands `RunFile`, `RunFileSync`, `RunLast`. No keymaps are however
+The plugin creates four user commands `RunFile`, `RunFileSync`, `RunLast`, `RunStop`. No keymaps are however
 created and it's left to the user. An example keymap could be as simple as
 
 ```lua
-vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFile<CR>", { desc = "(Run.nvim) Async" })
+vim.keymap.set({ "v", "n" }, "<leader>rf", ":RunFile<CR>", { desc = "(Run.nvim) Run Async" })
+vim.keymap.set({ "v", "n" }, "<leader>rs", ":RunStop<CR>", { desc = "(Run.nvim) Stop job" })
 ```
 
 ## Features
