@@ -168,6 +168,17 @@ local on_stream_data = function(buf, win, data, qf_list, populate_qflist, hl_gro
     end)
 end
 
+local should_focus_output_win = function(exit_code)
+    local mode = config.options.focus_output
+    if mode == "always" then
+        return true
+    end
+    if exit_code ~= 0 and mode == "on_error" then
+        return true
+    end
+    return false
+end
+
 ---Run a command asynchronously using `jobstart` and stream output to buffer.
 ---@param cmd string command to run
 ---@param curr_dir string working directory
@@ -253,7 +264,7 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                         vim.api.nvim_win_set_cursor(win, { line_count + 1, 0 })
                     end
 
-                    if exit_code ~= 0 and vim.api.nvim_win_is_valid(win) then
+                    if should_focus_output_win(exit_code) and vim.api.nvim_win_is_valid(win) then
                         vim.api.nvim_set_current_win(win)
                     end
                 end

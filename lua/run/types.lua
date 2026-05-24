@@ -39,6 +39,15 @@ M.validate_config = function(opts)
     if opts.populate_qflist_async ~= nil and type(opts.populate_qflist_async) ~= "boolean" then
         return false, "populate_qflist_async must be a boolean"
     end
+    if opts.focus_output ~= nil and type(opts.focus_output) ~= "string" then
+        return false, "focus_output must be a string"
+    end
+    if opts.focus_output ~= nil
+        and opts.focus_output ~= "never"
+        and opts.focus_output ~= "always"
+        and opts.focus_output ~= "on_error" then
+        return false, "focus_output must be one of: never, always, on_error"
+    end
     if opts.history ~= nil and type(opts.history) ~= "table" then
         return false, "history must be a table"
     end

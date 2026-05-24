@@ -46,6 +46,7 @@ Example configuration with default values:
         populate_qflist_async = true, --populate quickfix list for async commands
         open_qflist_sync = false, --open qflist after finishing (for sync)
         open_qflist_async = false, --open qflist after finishing (for async)
+        focus_output = "never", -- "never" | "on_error" | "always"
         history = {
             enable = true,
             -- history file location uses the platform path separator
@@ -171,6 +172,10 @@ Example configuration with default values:
 
 *open_qflist_async*           Boolean (default: false)
     Whether to open quickfix list after asynchronous commands.
+
+*focus_output*                String (default: "never")
+    Controls whether Run.nvim jumps to the output window after async runs.
+    Supported values: "never", "on_error", "always".
 
 *history.enable*              Boolean (default: true)
     Whether to enable command history.

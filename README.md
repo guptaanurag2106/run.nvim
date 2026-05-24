@@ -139,6 +139,9 @@ require("run").setup({
   -- Auto-open quickfix list with command output for async commands
   open_qflist_async = false,
 
+  -- Focus output window after run: "never" | "on_error" | "always"
+  focus_output = "never",
+
   -- Enable command history
   history = {
     enable = true,
