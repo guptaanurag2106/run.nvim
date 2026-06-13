@@ -39,6 +39,9 @@ M.validate_config = function(opts)
     if opts.populate_qflist_async ~= nil and type(opts.populate_qflist_async) ~= "boolean" then
         return false, "populate_qflist_async must be a boolean"
     end
+    if opts.highlight_stderr_full ~= nil and type(opts.highlight_stderr_full) ~= "boolean" then
+        return false, "highlight_stderr_full must be a boolean"
+    end
     if opts.focus_output ~= nil and type(opts.focus_output) ~= "string" then
         return false, "focus_output must be a string"
     end

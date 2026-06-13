@@ -18,6 +18,7 @@ local defaults = {
     open_qflist_sync = false,
     open_qflist_async = false,
     focus_output = "never",
+    highlight_stderr_full = false,
     history = {
         enable = true,
         history_file = vim.fn.stdpath("data") .. utils.path_separator .. "run.nvim.json",

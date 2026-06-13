@@ -1,9 +1,11 @@
 local utils = require("run.utils")
+local error_format = require("run.error_format")
 local config = require("run.config")
 local M = {}
 local ns_id = vim.api.nvim_create_namespace("RunNvimOutput")
 
 M.job_id = nil
+local qflist_replace_next = false
 
 ---Stop a running job by id.
 ---@return nil
@@ -14,35 +16,37 @@ M.stop_job = function()
     M.job_id = nil
 end
 
----Parse lines of text into quickfix entries.
+---Parse lines of text and appends to quickfix list
 ---@param data table Array of text blocks (stdout/stderr lines)
----@return table list of quickfix-style entries {filename, lnum, col, text}
-local parse_qf_list = function(data)
+local append_to_qflist = function(data, populate_qflist)
     local entries = {}
-
-    for _, block in ipairs(data) do
-        if block then
-            local lines = vim.split(block, "\n")
-            for _, line in ipairs(lines) do
-                local filename, lnum, col, message = string.match(line, "^(.*):(%d+):(%d+):(.*)$")
-                if filename and lnum and col then
-                    lnum = tonumber(lnum)
-                    col = tonumber(col)
-
-                    local entry = {
-                        filename = filename,
-                        lnum = lnum,
-                        col = col,
-                        text = message,
-                    }
-
-                    table.insert(entries, entry)
-                end
+    local locations = {}
+    for i, block in ipairs(data) do
+        -- \r may not come as a new line so manually split on that
+        local lines = vim.split(block, "[\r\n]+", { trimempty = true })
+        for _, line in ipairs(lines) do
+            local qf_entries = error_format.to_qf_entry(line)
+            if qf_entries ~= nil then
+                table.insert(entries, qf_entries.entry)
+                table.insert(locations, {
+                    index = i,
+                    start = qf_entries.location.start,
+                    finish = qf_entries.location.finish,
+                })
             end
         end
     end
 
-    return entries
+    if populate_qflist then
+        if qflist_replace_next then
+            vim.fn.setqflist(entries, "r")
+            qflist_replace_next = false
+        else
+            vim.fn.setqflist(entries, "a")
+        end
+    end
+
+    return locations
 end
 
 ---Run a command synchronously using `vim.system`.
@@ -70,7 +74,7 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
 
     -- Handle results
     vim.notify(result.stdout, vim.log.levels.INFO)
-    vim.notify(result.stderr, vim.log.levels.ERROR)
+    vim.notify(result.stderr, vim.log.levels.INFO)
     if result.code == 0 then
         vim.notify("\nCommand succeeded", vim.log.levels.INFO)
     else
@@ -78,11 +82,22 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
     end
 
     if populate_qflist then
-        vim.fn.setqflist(parse_qf_list({ result.stdout, result.stderr }), "r")
+        qflist_replace_next = true
+        append_to_qflist({ result.stdout, result.stderr }, true)
     end
 
-    if open_qflist then
-        vim.cmd("copen")
+    if result.code ~= 0 and populate_qflist then
+        vim.cmd("silent! cfirst")
+    end
+
+    if result.code ~= 0 and open_qflist then
+        -- open trouble.nvim quickfix otherwise just copen
+        local ok, trouble = pcall(require, "trouble")
+        if ok then
+            trouble.open("quickfix")
+        else
+            vim.cmd("copen")
+        end
     end
 end
 
@@ -129,12 +144,13 @@ local create_reuse_win = function(window_name)
         end,
     })
     vim.api.nvim_set_current_win(orig_win)
+    vim.b[buf].run_orig_win = orig_win
 
     return buf, win
 end
 
-local on_stream_data = function(buf, win, data, qf_list, populate_qflist, hl_group)
-    if not data or #data == 0 then
+local on_stream_data = function(buf, win, data, state, populate_qflist, stream_name)
+    if not data or #data == 0 or (#data == 1 and data[#data] == "") then
         return
     end
 
@@ -143,29 +159,61 @@ local on_stream_data = function(buf, win, data, qf_list, populate_qflist, hl_gro
             return
         end
 
-        if populate_qflist then
-            qf_list = utils.appendTable(qf_list, data)
+        if stream_name == "stdout" then
+            data[1] = state.stdout_pending .. data[1]
+            if #data > 1 then
+                state.stdout_pending = data[#data]
+                data[#data] = nil
+            end
+        else
+            data[1] = state.stderr_pending .. data[1]
+            if #data > 1 then
+                state.stderr_pending = data[#data]
+                data[#data] = nil
+            end
+        end
+
+        for i, _ in ipairs(data) do
+            -- vim represents NUL characters with \n
+            data[i] = data[i]:gsub("\n", "")
         end
 
         local line_count = vim.api.nvim_buf_line_count(buf)
-        local last_line = vim.api.nvim_buf_get_lines(buf, line_count - 1, line_count, false)[1]
-        data[1] = last_line .. data[1]
-        for i = 1, #data do
-            -- vim represents null as \n and new line as \r
-            -- https://vim.fandom.com/wiki/Newlines_and_nulls_in_Vim_script
-            data[i] = data[i]:gsub("\n", "")
-        end
-        vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, data)
+        vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count - 1, false, data)
 
-        local end_line = line_count + #data - 1
-        if hl_group then
-            vim.hl.range(buf, ns_id, hl_group, { line_count - 1, 0 }, { end_line, -1 }, { inclusive = true })
+        local highlightLocs = append_to_qflist(data, populate_qflist)
+        for _, loc in ipairs(highlightLocs) do
+            if stream_name == "stdout" then
+                vim.hl.range(buf, ns_id, "DiagnosticInfo", { line_count + loc.index - 2, loc.start },
+                    { line_count + loc.index - 2, loc.finish })
+                vim.hl.range(buf, ns_id, "Underlined", { line_count + loc.index - 2, loc.start },
+                    { line_count + loc.index - 2, loc.finish })
+            else
+                vim.hl.range(buf, ns_id, "DiagnosticError", { line_count + loc.index - 2, loc.start },
+                    { line_count + loc.index - 2, loc.finish })
+                vim.hl.range(buf, ns_id, "Underlined", { line_count + loc.index - 2, loc.start },
+                    { line_count + loc.index - 2, loc.finish })
+            end
         end
 
+        if stream_name == "stderr" and config.options.highlight_stderr_full then
+            vim.hl.range(buf, ns_id, "DiagnosticError",
+                { line_count - 1, 0 },
+                { line_count + #data - 1, -1 })
+        end
+
+        local end_line = line_count + #data
         if vim.api.nvim_win_is_valid(win) then
             vim.api.nvim_win_set_cursor(win, { end_line, 0 })
         end
     end)
+end
+
+local flush_pending_data = function(buf, win, state, populate_qflist)
+    on_stream_data(buf, win, { state.stdout_pending },
+        { stdout_pending = "", stderr_pending = "" }, populate_qflist, "stdout")
+    on_stream_data(buf, win, { state.stderr_pending },
+        { stdout_pending = "", stderr_pending = "" }, populate_qflist, "stderr")
 end
 
 local should_focus_output_win = function(exit_code)
@@ -212,18 +260,24 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
     vim.hl.range(buf, ns_id, "Title", { 1, 0 }, { 1, -1 }, { inclusive = true })
     vim.hl.range(buf, ns_id, "Special", { 3, 0 }, { 3, -1 }, { inclusive = true })
 
-    local qf_list = {}
     local start_time = vim.uv.hrtime()
+
+    qflist_replace_next = populate_qflist
+
+    local state = {
+        stdout_pending = "",
+        stderr_pending = ""
+    }
 
     local job_id = vim.fn.jobstart(cmd, {
         cwd = curr_dir,
         detach = false,
-        on_stdout = function(_, data)
-            on_stream_data(buf, win, data, qf_list, populate_qflist, nil)
+        on_stdout = function(_, data, name)
+            on_stream_data(buf, win, data, state, populate_qflist, name)
         end,
 
-        on_stderr = function(_, data)
-            on_stream_data(buf, win, data, qf_list, populate_qflist, "ErrorMsg")
+        on_stderr = function(_, data, name)
+            on_stream_data(buf, win, data, state, populate_qflist, name)
         end,
 
         on_exit = function(id, exit_code)
@@ -232,7 +286,9 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                     M.job_id = nil
                 end
                 if vim.api.nvim_buf_is_loaded(buf) then
-                    local end_time = vim.uv.hrtime()
+                    flush_pending_data(buf, win, state, populate_qflist)
+
+                    local end_time = vim.uv.hrtime() -- FIX: includes time for parsing inserting etc
 
                     local elapsed_time_ns = end_time - start_time
                     local elapsed_time_s = elapsed_time_ns / 1e9
@@ -249,8 +305,7 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                     end
 
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {
-                        message
-                    })
+                        message })
                     vim.hl.range(
                         buf,
                         ns_id,
@@ -268,16 +323,19 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                         vim.api.nvim_set_current_win(win)
                     end
                 end
-                if populate_qflist then
-                    vim.fn.setqflist(parse_qf_list(qf_list), "r")
+
+                if exit_code ~= 0 and populate_qflist then
+                    vim.schedule(function()
+                        vim.cmd("silent! cfirst")
+                    end)
                 end
+
                 if exit_code ~= 0 and open_qflist then
+                    -- open trouble.nvim quickfix otherwise just copen
                     local ok, trouble = pcall(require, "trouble")
                     if ok then
-                        -- Open Trouble quickfix view
                         trouble.open("quickfix")
                     else
-                        -- Fallback to the normal quickfix window
                         vim.cmd("copen")
                     end
                 end
@@ -293,6 +351,20 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
         return nil
     end
     M.job_id = job_id
+
+    vim.keymap.set("n", "<CR>", function()
+        local m = error_format.match(vim.api.nvim_get_current_line())
+        if m then
+            local target_win = vim.b.run_orig_win
+            if target_win and vim.api.nvim_win_is_valid(target_win) then
+                vim.api.nvim_set_current_win(target_win)
+            end
+            vim.cmd(string.format("edit +%d %s", tonumber(m.lnum), m.file))
+            if tonumber(m.col) > 0 then
+                vim.api.nvim_win_set_cursor(0, { tonumber(m.lnum), tonumber(m.col) - 1 })
+            end
+        end
+    end, { buffer = buf, noremap = true, silent = true })
 
     vim.keymap.set("n", "q", function()
         M.stop_job()
