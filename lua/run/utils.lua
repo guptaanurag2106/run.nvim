@@ -21,21 +21,6 @@ M.get_open_command = function()
     end
 end
 
----Split string into a table of strings using a separator.
----@param inputString string The string to split.
----@param sep string The separator to use.
----@return table table A table of strings.
-M.split = function(inputString, sep)
-    local fields = {}
-
-    local pattern = string.format("([^%s]+)", sep)
-    local _ = string.gsub(inputString, pattern, function(c)
-        fields[#fields + 1] = c
-    end)
-
-    return fields
-end
-
 ---Joins arbitrary number of paths together.
 ---@param ... string The paths to join.
 ---@return string
@@ -86,29 +71,12 @@ M.ends_with = function(str, suffix)
     return str:sub(- #suffix) == suffix
 end
 
---- Get the file extension from a given filename.
+---Get the file extension from a given filename.
 ---Return the extension (text after the last dot) or nil when none.
 ---@param filename string The name of the file (including its extension).
 ---@return string|nil The file extension, or nil if no extension exists.
 M.get_file_extension = function(filename)
-    if filename then
-        local dot_position = filename:match(".*()%.")
-        if dot_position then
-            return filename:sub(dot_position + 1)
-        end
-    end
-    return nil
-end
-
----Append all elements from sourceTable into destinationTable.
----@param destinationTable table
----@param sourceTable table
----@return table destinationTable
-M.appendTable = function(destinationTable, sourceTable)
-    for i = 1, #sourceTable do
-        table.insert(destinationTable, sourceTable[i])
-    end
-    return destinationTable
+    return filename and filename:match("%.([^%.]+)$")
 end
 
 return M

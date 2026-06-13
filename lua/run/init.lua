@@ -162,7 +162,11 @@ M.runfile = function(range, async)
             pcall(config.options.action_function, file_list, curr_dir)
         if ok and action_function_command ~= nil then
             default_command = action_function_command
-            need_completion = func_need_completion
+            if func_need_completion ~= nil then
+                need_completion = func_need_completion
+            else
+                need_completion = true
+            end
             has_action_function_command = true
         end
     end
@@ -214,7 +218,7 @@ M.runfile = function(range, async)
         end
 
         local command = ""
-        if string.len(input) == 0 then
+        if #input == 0 then
             command = default_command
         else
             command = input
@@ -233,7 +237,7 @@ M.runfile = function(range, async)
                 local response = vim.fn.input(message)
                 local response_lower = response:lower()
 
-                if response_lower == "y" or string.len(response) == 0 then
+                if response_lower == "y" or #response == 0 then
                     execute = true
                     break
                 elseif response_lower == "n" then
@@ -251,7 +255,7 @@ M.runfile = function(range, async)
         end
 
         if config.options.history ~= nil and config.options.history.enable then
-            if default_command ~= input and default_suggestion ~= input and string.len(input) ~= 0 then
+            if default_command ~= input and default_suggestion ~= input and #input ~= 0 then
                 M._save(history_key, input, config.options.history.history_file, history, default_command) -- Key is command (deterministic) and user choice is input (from prompt)
             end
         end
@@ -264,9 +268,7 @@ M.runfile = function(range, async)
 
         -- Run `input`
         if async then
-            local job_id =
-                run.run_async(command, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
-            _ = job_id
+            run.run_async(command, curr_dir, config.options.populate_qflist_async, config.options.open_qflist_async)
         else
             print("\n")
             run.run_sync(command, curr_dir, config.options.populate_qflist_sync, config.options.open_qflist_sync)
@@ -293,10 +295,8 @@ M.runLast = function()
     if command ~= nil and command ~= "" then
         -- Run `input`
         if M.last_run.async then
-            local job_id =
-                run.run_async(command, M.last_run.cwd, config.options.populate_qflist_async,
-                    config.options.open_qflist_async)
-            _ = job_id
+            run.run_async(command, M.last_run.cwd, config.options.populate_qflist_async,
+                config.options.open_qflist_async)
         else
             print("\n")
             run.run_sync(command, M.last_run.cwd, config.options.populate_qflist_sync, config.options.open_qflist_sync)
@@ -495,9 +495,6 @@ M._get = function(key, path)
     end
 
     local val = history[key]
-    if type(val) == "string" then --Old style
-        val = { val }
-    end
     return val, history
 end
 
@@ -547,14 +544,6 @@ end
 ---@return boolean true if str ends with suffix
 M.ends_with = function(str, suffix)
     return utils.ends_with(str, suffix)
-end
-
----Split string into a table of strings using a separator.
----@param str string The string to split.
----@param sep string The separator to use.
----@return table table A table of strings.
-M.split = function(str, sep)
-    return utils.split(str, sep)
 end
 
 ---Register get_current_files, get_current_dir functions for a browser

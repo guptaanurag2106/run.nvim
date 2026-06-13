@@ -62,7 +62,7 @@ M.register = function(browser_name, func_name, func)
     if func_name ~= "get_current_files" and func_name ~= "get_current_dir" then
         error("Can't set function " .. func_name)
     end
-    if not browser_name or string.len(browser_name) == 0 then
+    if not browser_name or #browser_name == 0 then
         error("Browser Name cannot be empty")
     end
     -- ensure browser table exists so callers can register new browsers
@@ -115,7 +115,7 @@ M.get_current_dir = function(bufnr)
     end
     if browser.get_current_dir then
         local dir = M.browsers[M.current_browser].get_current_dir(bufnr)
-        if dir and string.len(dir) ~= 0 then
+        if dir and #dir ~= 0 then
             return dir, nil
         else
             return nil, M.current_browser .. " returned empty dir_name"

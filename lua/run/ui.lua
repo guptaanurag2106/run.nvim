@@ -39,36 +39,30 @@ M.input = function(opts, on_confirm)
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
+    local ns_id = vim.api.nvim_create_namespace("run_input")
+    local prompt_text = opts.prompt
     local function apply_prompt()
-        if not opts.prompt then return end
-
-        local prompt_text = opts.prompt
-        if string.sub(prompt_text, -1) ~= " " then
-            prompt_text = prompt_text .. " "
-        end
-
-        local ns_id = vim.api.nvim_create_namespace("run_input")
         vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
 
-        local line_count = vim.api.nvim_buf_line_count(buf)
-        for i = 0, line_count - 1 do
-            vim.api.nvim_buf_set_extmark(buf, ns_id, i, 0, {
-                virt_text = { { prompt_text, config.options.ui.prompt_hl } },
-                virt_text_pos = "inline",
-                right_gravity = false,
-            })
-        end
+        local curr_row = vim.api.nvim_win_get_cursor(win)[1]
+        vim.api.nvim_buf_set_extmark(buf, ns_id, curr_row - 1, 0, {
+            virt_text = { { prompt_text, config.options.ui.prompt_hl } },
+            virt_text_pos = "inline",
+            right_gravity = false,
+        })
     end
 
-    apply_prompt()
+    if prompt_text then
+        apply_prompt()
 
-    -- Re-apply prompt on text change, kinda slow but will see later
-    local group = vim.api.nvim_create_augroup("RunInputPrompt", { clear = true })
-    vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
-        buffer = buf,
-        callback = apply_prompt,
-        group = group,
-    })
+        -- Re-apply prompt on text change, kinda slow but will see later
+        local group = vim.api.nvim_create_augroup("RunInputPrompt", { clear = true })
+        vim.api.nvim_create_autocmd({ "CursorMoved", "TextChangedI" }, {
+            buffer = buf,
+            callback = apply_prompt,
+            group = group,
+        })
+    end
 
     if #lines > 0 then
         vim.api.nvim_win_set_cursor(win, { #lines, #lines[#lines] })
@@ -91,13 +85,13 @@ M.input = function(opts, on_confirm)
 
     map({ "i", "n" }, "<CR>", function()
         local line = vim.api.nvim_get_current_line()
-        vim.cmd("stopinsert")
+        vim.cmd.stopinsert()
         close()
         on_confirm(line)
     end)
 
     map("i", "<C-c>", function()
-        vim.cmd("stopinsert")
+        vim.cmd.stopinsert()
         close()
         on_confirm(nil)
     end)
