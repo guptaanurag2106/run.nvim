@@ -10,8 +10,9 @@ CONTENTS                                                          *run-contents*
     4. Commands ................ |run-commands|
     5. Functions ............... |run-functions|
     6. Configuration ........... |run-configuration|
-    7. Path Placeholders ....... |run-placeholders|
-    8. File Browser Integrations |run-browsers|
+    7. Error Format Parsing .... |run-errorformat|
+    8. Path Placeholders ....... |run-placeholders|
+    9. File Browser Integrations |run-browsers|
 
 ==============================================================================
 1. INTRODUCTION                                               *run-introduction*
@@ -38,34 +39,73 @@ Emacs references:
 Example configuration with default values:
 >lua
     require("run").setup({
-        current_browser = "oil",
-        ask_confirmation = true, -- ask confirmation before running the command
-        open_cmd = nil, -- auto-detected based on OS (example xdg-open for
-                        -- linux, open for macos)
-        populate_qflist_sync = false, --populate quickfix list for sync commands
-        populate_qflist_async = true, --populate quickfix list for async commands
-        open_qflist_sync = false, --open qflist after finishing (for sync)
-        open_qflist_async = false, --open qflist after finishing (for async)
-        focus_output = "never", -- "never" | "on_error" | "always"
-        history = {
-            enable = true,
-            -- history file location uses the platform path separator
+      -- File browser to use (default: "oil")
+      current_browser = "oil",
+      -- Ask for confirmation before executing commands
+      ask_confirmation = true,
+      -- Use custom input UI instead of vim.ui.input
+      use_custom_ui = true,
+      -- open_cmd, default is auto-detected based on OS
+      open_cmd = nil,
+      -- Auto-populate quickfix list with command output for sync commands
+      populate_qflist_sync = false,
+      -- Auto-populate quickfix list with command output for async commands
+      populate_qflist_async = true,
+      -- Auto-open quickfix list with command output for sync commands
+      open_qflist_sync = false,
+      -- Auto-open quickfix list with command output for async commands
+      open_qflist_async = false,
+      -- Focus output window after run: "never" | "on_error" | "always"
+      focus_output = "never",
+      -- Highlight full stderr lines red in the output buffer (default: false)
+      -- When false, only the matched file:line:col span is highlighted.
+      highlight_stderr_full = false,
+      -- Enable command history
+      history = {
+        enable = true,
             history_file = vim.fn.stdpath("data") .. require("run.utils").path_separator .. "run.nvim.json"
+      },
+      -- UI settings for custom input window
+      ui = {
+          border = "none",
+          prompt_hl = "Constant",
+      },
+      -- Command to open the output window
+      output_window_cmd = "botright 15split",
+      -- Fallback cwd scope when browser cwd lookup fails
+      -- "global": use Neovim cwd (vim.fn.getcwd())
+      -- "buffer": use current file directory for normal file buffers
+      cwd_fallback_scope = "global",
+      -- Customize default actions for specific file types
+      default_actions = {
+        -- Example: custom Python command
+        [".py"] = {
+          command = "python %f",
+          description = "Run Python module"
         },
-        ui = {
-            border = "none",
-            prompt_hl = "Constant",
-        },
-        output_window_cmd = "botright 15split",
-        cwd_fallback_scope = "global",
-        default_actions = {
-            -- ... see detailed default actions below
-        },
-        action_function = function(file_list, curr_dir)
-            if #file_list == 1 and file_list[1] == "Makefile" then
-                return "make -B", false
-            end
-        end
+        -- Add your own commands here
+      },
+      -- Custom action function to determine what command to run based on
+      --  selected file list, should return <cmd>, <requires_completion>
+      action_function = function(file_list, curr_dir)
+          if #file_list == 1 and file_list[1] == "Makefile" then
+              return "make -B", false
+          end
+
+           local has_go_marker = false
+           local only_go_project_files = #file_list > 0
+           for _, file in ipairs(file_list) do
+               if file == "go.mod" or file == "go.sum" then
+                   has_go_marker = true
+               elseif not file:match("%.go$") then
+                   only_go_project_files = false
+               end
+           end
+           if has_go_marker and only_go_project_files then
+               return "go run .", false
+           end
+           return nil, false
+       end
     })
 <
 
@@ -76,8 +116,13 @@ Example configuration with default values:
                   The command runs in the background and shows real-time
                   output in a split window. Allows you to continue working.
                   In the output window:
+                  - Press '<CR>' on a highlighted file:line span to jump
+                    to that location in the original window.
                   - Press 'q' to close the window (stops the job).
                   - Press '<C-c>' to stop the running job.
+                  The plugin highlights file:line:col spans in the output
+                  buffer — green for stdout, red for stderr. Spans are
+                  underlined to indicate they are clickable.
 
 *:RunFileSync*      Run a command on the current file/folder(s) (synchronous)
                   The command blocks until execution completes and shows
@@ -146,6 +191,10 @@ Example configuration with default values:
 *ask_confirmation*            Boolean (default: true)  
     Whether to ask for confirmation before running commands.
 
+*use_custom_ui*               Boolean (default: true)  
+    Use the built-in input window instead of |vim.ui.input|.
+    When false, falls back to |vim.ui.input| for the command prompt.
+
 *open_cmd*                    String or nil (default: nil)
     Command to use for opening files with default application.
     If nil, will auto-detect based on OS.
@@ -159,13 +208,23 @@ Example configuration with default values:
 
 *populate_qflist_sync*        Boolean (default: false)
     Whether to populate quickfix list for synchronous commands.
+    On non-zero exit the plugin runs `:cfirst` to jump to the first error.
+
+*highlight_stderr_full*       Boolean (default: false)
+    When true, stderr lines with a matched file:line pattern get the
+    entire line highlighted with the DiagnosticError group instead of
+    just the matched span. Useful for quickly spotting error lines in
+    the output buffer.
 
 *populate_qflist_async*       Boolean (default: true)
     Whether to populate quickfix list for asynchronous commands.
+    Entries are streamed into the list in real time as output arrives.
     If trouble.nvim is installed, it will be used to open the list.
     Note: when `open_qflist_async` is true the quickfix/trouble window is
     opened only for non-zero exit codes (failures) — this avoids opening the
     quickfix on successful runs unless explicitly requested.
+    On non-zero exit the plugin also runs `:cfirst` to jump to the first
+    error, matching `:make` behavior.
 
 *open_qflist_sync*            Boolean (default: false)
     Whether to open quickfix list after synchronous commands.
@@ -231,7 +290,33 @@ Example configuration with default values:
 <
 
 ==============================================================================
-7. PATH PLACEHOLDERS                                          *run-placeholders*
+7. ERROR FORMAT PARSING                                      *run-errorformat*
+
+When |populate_qflist_async| or |populate_qflist_sync| is enabled, Run.nvim
+parses command output (both stdout and stderr) into quickfix entries using
+built-in error format patterns. Lines that don't match any pattern are
+silently ignored.
+
+Supported formats in order of priority~
+    generic1        filename:line:col: message
+    lua             /usr/bin/lua: file.lua:31: message
+    lua-stack       file.lua:31: in function 'name'
+    go              /tmp/main.go:4 +0x25 (panic trace)
+    go-test         file_test.go:42: expected X, got Y
+    generic2        filename:line: message (fallback when col missing)
+    gcc             from file.h:5:1 (include chain)
+    python          File "test.py", line 10, in <module>
+    java            at Main.test(Main.java:15)
+    bash            file.sh: line 1: command not found
+    ocaml           File "foo.ml", line 5, characters 20-155:
+    valgrind        ==1332== at 0x4040743C: System.cpp:217
+
+Filename validation filters out false positives: purely numeric tokens,
+command flags (dash-leading names), brackets, quotes, pipes, and trailing
+separators are rejected.
+
+==============================================================================
+8. PATH PLACEHOLDERS                                          *run-placeholders*
 
 When defining commands, you can use these placeholders that will be replaced
 with actual paths:
@@ -280,7 +365,7 @@ Example of placeholder usage:
 <
 
 ==============================================================================
-8. FILE BROWSER INTEGRATIONS                                      *run-browsers*
+9. FILE BROWSER INTEGRATIONS                                      *run-browsers*
 
 Run.nvim comes with built-in support for oil.nvim, but you can integrate with
 other file browsers by implementing and registering two functions:

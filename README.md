@@ -101,14 +101,17 @@ vim.keymap.set({ "v", "n" }, "<leader>rs", ":RunStop<CR>", { desc = "(Run.nvim) 
     -   Choose to run commands synchronously, asynchronously and populate the qflist with the output
 -   Output Window
     -   Unbuffered output of asynchronous commands can be seen in a new popup window which opens at the bottom
-    -   It support `q` to close and `<C-c>` to stop command execution
+    -   It supports `q` to close, `<C-c>` to stop command execution, and `<CR>` on a highlighted `file:line` span to jump to that location
+    -   Matched `file:line:col` spans are underlined to indicate they are clickable; stderr output can be highlighted full-line red (configurable)
     -   The buffer is reused if multiple `:RunFile` are started
 -   History
     -   If you provide a command other than default, it is saved to history and is suggested from then onwards for that filetype
     -   History is stored as JSON in your `stdpath('data')` by default. The plugin keeps up to 10 entries per command key.
 -   Populating Quickfix List
     -   Based on the [config](#Configuration), the quickfix list is automatically parsed and populated which can be opened via [trouble.nvim](https://github.com/folke/trouble.nvim) or just `:copen`.
-    -   Note: when configured to open the quickfix/trouble window, the plugin opens it only for non-zero (failing) exit codes by default to avoid noise on successful runs.
+    -   On non-zero exit (command failure), the plugin auto-jumps to the first error via `:cfirst` for a `:make`-like experience.
+    -   Supports a wide range of compiler/tool output formats: generic `file:line:col`, `file:line` patterns, GCC, Python, Java, Lua, Go, Bash, OCaml, Valgrind, and GNU Make errors.
+    -   Filename validation rejects false positives (flags, numeric tokens, brackets, etc.) so normal output lines don't clutter the quickfix list.
 -   CWD Fallback Scope
     -   If the active file browser cannot provide cwd, Run.nvim uses `cwd_fallback_scope`.
     -   `global` uses Neovim cwd (`vim.fn.getcwd()`).
@@ -126,6 +129,9 @@ require("run").setup({
   -- Ask for confirmation before executing commands
   ask_confirmation = true,
 
+  -- Use custom input UI instead of vim.ui.input
+  use_custom_ui = true,
+
   -- open_cmd, default is auto-detected based on OS
   open_cmd = nil,
 
@@ -141,6 +147,10 @@ require("run").setup({
 
   -- Focus output window after run: "never" | "on_error" | "always"
   focus_output = "never",
+
+  -- Highlight full stderr lines red in the output buffer (default: false)
+  -- When false, only the matched file:line:col span is highlighted.
+  highlight_stderr_full = false,
 
   -- Enable command history
   history = {
