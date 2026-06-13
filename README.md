@@ -50,7 +50,6 @@ It helps by:
 ```lua
 {
     "guptaanurag2106/run.nvim",
-    dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
             require("run").setup({})
     end,
@@ -62,7 +61,6 @@ It helps by:
 ```lua
 use {
     "guptaanurag2106/run.nvim",
-    requires = { {'nvim-lua/plenary.nvim'} },
     config = function()
             require("run").setup({})
     end
@@ -275,7 +273,6 @@ You can override any of these or add your own in the configuration.
 ## Requirements
 
 -   Neovim >= 0.10 (required for `vim.system`) — older versions may not support sync commands.
--   `nvim-lua/plenary.nvim` (utility helpers; listed as a dependency in installation snippets)
 
 ## Limitations / Drawbacks
 

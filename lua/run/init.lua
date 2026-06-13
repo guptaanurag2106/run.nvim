@@ -1,4 +1,3 @@
-local Path = require("plenary.path")
 local _browsers = require("run.browsers")
 local config = require("run.config")
 local utils = require("run.utils")
@@ -477,13 +476,15 @@ M._get = function(key, path)
     else
         history = {}
         if stat and stat.type == "file" then
-            local p = Path:new(path)
-            local ok, content = pcall(function()
-                return p:read()
-            end)
-            if ok and content and #content > 0 then
-                local ok2, decoded = pcall(vim.json.decode, content)
-                if ok2 and type(decoded) == "table" then
+            local file = io.open(path, "r")
+            if file == nil then
+                return nil, {}
+            end
+            local content = file:read("*a")
+            file:close()
+            if content and #content > 0 then
+                local ok, decoded = pcall(vim.json.decode, content)
+                if ok and type(decoded) == "table" then
                     history = decoded
                 end
             end
@@ -525,7 +526,12 @@ M._save = function(key, value, path, history, seed)
         table.remove(history[key], 1)
     end
 
-    Path:new(path):write(vim.fn.json_encode(history), "w")
+    local file = io.open(path, "w");
+    if file == nil then
+        return
+    end
+    file:write(vim.fn.json_encode(history))
+    file:close()
 
     local stat = vim.uv.fs_stat(path)
     history_cache.path = path
@@ -587,3 +593,4 @@ return M
 
 --TODO:no need for fill input
 --TODO:multiple action per file (options) add to config
+--TODO:custom error format patterns
