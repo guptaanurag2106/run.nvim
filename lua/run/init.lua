@@ -13,8 +13,6 @@ M.last_run = {
 
 local history_cache = {
     path = nil,
-    mtime_sec = nil,
-    mtime_nsec = nil,
     history = nil,
 }
 
@@ -465,33 +463,24 @@ end
 ---@param path string the history file path
 ---@return table|nil, table history list for key (or nil) and full history table
 M._get = function(key, path)
-    local stat = vim.uv.fs_stat(path)
-    local mtime_sec = stat and stat.mtime and stat.mtime.sec or nil
-    local mtime_nsec = stat and stat.mtime and stat.mtime.nsec or nil
-
     local history = {}
-    if history_cache.path == path and history_cache.history ~= nil and history_cache.mtime_sec == mtime_sec
-        and history_cache.mtime_nsec == mtime_nsec then
+    if history_cache.path == path and history_cache.history ~= nil then
         history = history_cache.history
     else
         history = {}
-        if stat and stat.type == "file" then
-            local file = io.open(path, "r")
-            if file == nil then
-                return nil, {}
-            end
-            local content = file:read("*a")
-            file:close()
-            if content and #content > 0 then
-                local ok, decoded = pcall(vim.json.decode, content)
-                if ok and type(decoded) == "table" then
-                    history = decoded
-                end
+        local file = io.open(path, "r")
+        if file == nil then
+            return nil, {}
+        end
+        local content = file:read("*a")
+        file:close()
+        if content and #content > 0 then
+            local ok, decoded = pcall(vim.json.decode, content)
+            if ok and type(decoded) == "table" then
+                history = decoded
             end
         end
         history_cache.path = path
-        history_cache.mtime_sec = mtime_sec
-        history_cache.mtime_nsec = mtime_nsec
         history_cache.history = history
     end
 
@@ -533,10 +522,7 @@ M._save = function(key, value, path, history, seed)
     file:write(vim.fn.json_encode(history))
     file:close()
 
-    local stat = vim.uv.fs_stat(path)
     history_cache.path = path
-    history_cache.mtime_sec = stat and stat.mtime and stat.mtime.sec or nil
-    history_cache.mtime_nsec = stat and stat.mtime and stat.mtime.nsec or nil
     history_cache.history = history
 end
 
