@@ -1,4 +1,3 @@
-local utils = require("run.utils")
 local error_format = require("run.error_format")
 local config = require("run.config")
 local M = {}
@@ -92,8 +91,8 @@ M.run_sync = function(cmd, curr_dir, populate_qflist, open_qflist)
 
     if result.code ~= 0 and open_qflist then
         -- open trouble.nvim quickfix otherwise just copen
-        local ok, trouble = pcall(require, "trouble")
-        if ok then
+        local ok1, trouble = pcall(require, "trouble")
+        if ok1 then
             trouble.open("quickfix")
         else
             vim.cmd("copen")
@@ -296,12 +295,13 @@ M.run_async = function(cmd, curr_dir, populate_qflist, open_qflist)
                     local milliseconds = math.floor((elapsed_time_s - seconds) * 1000)
 
                     local line_count = vim.api.nvim_buf_line_count(buf)
-                    local message = ""
+                    local message
                     if exit_code == 0 then
-                        message = string.format("Command finished successfully in %d.%03d seconds", seconds, milliseconds)
+                        message = string.format("Command finished successfully in %d.%03d seconds",
+                            seconds, milliseconds)
                     else
-                        message = string.format("Command failed with exit code %d in %d.%03d seconds", exit_code, seconds,
-                            milliseconds)
+                        message = string.format("Command failed with exit code %d in %d.%03d seconds",
+                            exit_code, seconds, milliseconds)
                     end
 
                     vim.api.nvim_buf_set_lines(buf, line_count, line_count, false, {

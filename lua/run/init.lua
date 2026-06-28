@@ -130,7 +130,7 @@ M.runfile = function(range, async)
         file_list = {}
         out_of_browser = true
     elseif not skip_browser_lookup then
-        local browser_cwd = nil
+        local browser_cwd
         browser_cwd, browser_err = M._get_current_dir(bufnr)
         if browser_err ~= nil or browser_cwd == nil or browser_cwd:len() == 0 then
             -- print("Cannot get current directory. Please ensure you are in the file browser: " ..
@@ -214,7 +214,7 @@ M.runfile = function(range, async)
             curr_dir = resolve_fallback_cwd(bufnr)
         end
 
-        local command = ""
+        local command
         if #input == 0 then
             command = default_command
         else
@@ -253,7 +253,9 @@ M.runfile = function(range, async)
 
         if config.options.history ~= nil and config.options.history.enable then
             if default_command ~= input and default_suggestion ~= input and #input ~= 0 then
-                M._save(history_key, input, config.options.history.history_file, history, default_command) -- Key is command (deterministic) and user choice is input (from prompt)
+                -- Key is command (deterministic) and user choice is input (from prompt)
+                M._save(history_key, input, config.options.history.history_file,
+                    history, default_command)
             end
         end
 
@@ -355,7 +357,8 @@ M._get_selected_type = function(curr_dir, file_list)
             if stat then
                 if stat.type == "directory" then
                     type1 = "dir"
-                elseif stat.type == "file" and vim.fn.executable(abs_path) == 1 then --TODO:check stat.mode bitwise?? cross platform??
+                elseif stat.type == "file" and vim.fn.executable(abs_path) == 1 then
+                    --TODO:check stat.mode bitwise?? cross platform??
                     type1 = "exe"
                 end
             end
@@ -463,7 +466,7 @@ end
 ---@param path string the history file path
 ---@return table|nil, table history list for key (or nil) and full history table
 M._get = function(key, path)
-    local history = {}
+    local history
     if history_cache.path == path and history_cache.history ~= nil then
         history = history_cache.history
     else

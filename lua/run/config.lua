@@ -137,7 +137,7 @@ local defaults = {
             description = "Opens PDF file in default viewer",
         },
     },
-    action_function = function(file_list, curr_dir)
+    action_function = function(file_list, _curr_dir)
         -- return <cmd>, <requires_completion>
         if #file_list == 1 and file_list[1] == "Makefile" then
             return "make -B", false
