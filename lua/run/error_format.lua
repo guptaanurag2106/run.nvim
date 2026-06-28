@@ -63,6 +63,72 @@ M.match = function(line)
     end
 
     do
+        -- Clang sanitizer frame:     #0 0x558c87a3dde1 in compare /path/file.c:19:12
+        local file, lnum, col =
+            line:match("^%s*#%d+%s+0x[0-9a-fA-F]+%s+in%s+.*%s+(/%S+):(%d+):(%d+)$")
+        if file and lnum and col then
+            local loc_start = line:find(file, 1, true) - 1
+            return {
+                file = file,
+                lnum = lnum,
+                col = col,
+                text = "",
+                loc_start = loc_start,
+                loc_end = loc_start + #file + #lnum + #col + 2,
+            }
+        end
+    end
+
+    do
+        -- Clang sanitizer frame (with msg):     #0 0x... in foo /path/file.c:19: msg here
+        local file, lnum, msg =
+            line:match("^%s*#%d+%s+0x[0-9a-fA-F]+%s+in%s+.*%s+(/%S+):(%d+):%s*(.+)$")
+        if file and lnum and msg then
+            local loc_start = line:find(file, 1, true) - 1
+            return {
+                file = file,
+                lnum = lnum,
+                col = "0",
+                text = msg,
+                loc_start = loc_start,
+                loc_end = loc_start + #file + #lnum + 1,
+            }
+        end
+    end
+
+    do
+        -- Clang sanitizer frame (bare line):     #0 0x... in foo /path/file.c:19
+        local file, lnum = line:match("^%s*#%d+%s+0x[0-9a-fA-F]+%s+in%s+.*%s+(/%S+):(%d+)$")
+        if file and lnum then
+            local loc_start = line:find(file, 1, true) - 1
+            return {
+                file = file,
+                lnum = lnum,
+                col = "0",
+                text = "",
+                loc_start = loc_start,
+                loc_end = loc_start + #file + #lnum + 1,
+            }
+        end
+    end
+
+    do
+        -- Clang sanitizer SUMMARY:     SUMMARY: MemorySanitizer: use-of-uninit /path/file.c:19:12 in ...
+        local file, lnum, col = line:match("^SUMMARY:[^/]+(/[^:]+):(%d+):(%d+)")
+        if file and lnum and col then
+            local loc_start = line:find(file, 1, true) - 1
+            return {
+                file = file,
+                lnum = lnum,
+                col = col,
+                text = "",
+                loc_start = loc_start,
+                loc_end = loc_start + #file + #lnum + #col + 2,
+            }
+        end
+    end
+
+    do
         -- Lua: /usr/bin/lua: database.lua:31: assertion failed!
         local exec, file, lnum, msg =
             line:match("^(.-):%s*([^:]-%.[^:]+):(%d+):%s*(.+)$")
